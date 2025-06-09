@@ -1,0 +1,108 @@
+<div id="newspanel" class="viewcontainer">
+    <el-row>
+        <el-col :span="24">
+            <div class="viewheader">新闻面板</div>
+        </el-col>
+    </el-row>
+    <el-row>
+        <div class="viewbody">
+            <el-row :gutter="10">
+                <!-- 左侧新闻表格 -->
+                <el-col :span="12" class="news-table-container">
+                    <el-row :gutter="10" class="filter-row">
+                        <el-col :span="6">
+                            <el-select v-model="filterCategory" placeholder="分类" clearable>
+                                <el-option
+                                        v-for="item in categoryOptions"
+                                        :key="item"
+                                        :label="item"
+                                        :value="item">
+                                    <div class="category-option">
+                                        <span class="color-block" :style="{backgroundColor: getCategoryColor(item)}"></span>
+                                        {{ item }}
+                                    </div>
+                                </el-option>
+                            </el-select>
+                        </el-col>
+                        <el-col :span="6">
+                            <el-select v-model="filterTopic" placeholder="主题" clearable>
+                                <el-option
+                                        v-for="item in topicOptions"
+                                        :key="item"
+                                        :label="item"
+                                        :value="item">
+                                </el-option>
+                            </el-select>
+                        </el-col>
+                        <el-col :span="12">
+                            <el-input
+                                    v-model="searchText"
+                                    placeholder="搜索标题或实体..."
+                                    prefix-icon="el-icon-search"
+                                    clearable>
+                            </el-input>
+                        </el-col>
+                    </el-row>
+                    <el-table
+                            :data="filteredNewsList"
+                            style="width: 100%"
+                            height="250"
+                            @row-click="handleRowClick"
+                            highlight-current-row>
+                        <el-table-column
+                                prop="category"
+                                label="分类"
+                                width="100">
+                            <template slot-scope="scope">
+                                <el-tag :color="getCategoryColor(scope.row.category)" size="mini" class="white-text">
+                                    {{ scope.row.category }}
+                                </el-tag>
+                            </template>
+                        </el-table-column>
+                        <el-table-column
+                                prop="topic"
+                                label="主题"
+                                width="100">
+                        </el-table-column>
+                        <el-table-column
+                                prop="headline"
+                                label="标题"
+                                show-overflow-tooltip>
+                        </el-table-column>
+                    </el-table>
+                </el-col>
+                <!-- 右侧热度图表区域 -->
+                <el-col :span="12" class="news-chart-container">
+                    <div class="chart-header">
+                        <span>热度变化趋势</span>
+                        <!-- 分类标签区域 -->
+                        <div class="category-tags" v-if="selectedCategories.length > 0">
+                            <el-tag
+                                    v-for="category in selectedCategories"
+                                    :key="category"
+                                    :color="getCategoryColor(category)"
+                                    class="white-text category-tag"
+                                    @mouseenter.native="handleCategoryHover(category, $event)"
+                                    @mouseleave.native="handleCategoryHover(null)">
+                                {{ category }}
+                            </el-tag>
+                        </div>
+                        <el-button
+                                type="text"
+                                size="small"
+                                icon="el-icon-delete"
+                                @click="clearSelectedNews"
+                                :disabled="selectedNews.length === 0">
+                            清空选择
+                        </el-button>
+                    </div>
+                    <div id="news-trend-chart" class="trend-chart"></div>
+                    <div id="hover-chart-container" class="hover-chart-container" v-show="hoveredCategory">
+                        <div class="hover-chart-title">{{ hoveredCategory }} 分类热度趋势</div>
+                        <div id="category-hover-chart" class="hover-chart"></div>
+                    </div>
+                </el-col>
+            </el-row>
+        </div>
+    </el-row>
+</div>

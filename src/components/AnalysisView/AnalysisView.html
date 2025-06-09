@@ -1,0 +1,196 @@
+<div id="analysisview" class="viewcontainer">
+    <el-row>
+        <el-col :span="24">
+            <div class="viewheader">数据分析</div>
+        </el-col>
+    </el-row>
+    <el-row class="content-row">
+        <el-col :span="16" class="chart-container">
+            <div class="analysis-content">
+                <el-form :model="queryForm" ref="queryForm" label-width="80px" size="mini" class="compact-form">
+                    <el-row :gutter="10">
+                        <el-col :span="8">
+                            <el-form-item label="时间">
+                                <el-date-picker
+                                        v-model="queryForm.dateRange"
+                                        type="daterange"
+                                        range-separator="-"
+                                        start-placeholder="开始"
+                                        end-placeholder="结束"
+                                        value-format="yyyy-MM-dd"
+                                        size="mini"
+                                        style="width: 100%;">
+                                </el-date-picker>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="8">
+                            <el-form-item label="新闻主题">
+                                <el-select
+                                        v-model="queryForm.topics"
+                                        multiple
+                                        filterable
+                                        collapse-tags
+                                        placeholder="选择主题"
+                                        size="mini"
+                                        style="width: 100%;">
+                                    <el-option
+                                            v-for="item in topicOptions"
+                                            :key="item.id"
+                                            :label="item.name"
+                                            :value="item.id">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="8">
+                            <el-form-item label="分类">
+                                <el-select
+                                        v-model="queryForm.categories"
+                                        multiple
+                                        collapse-tags
+                                        placeholder="选择分类"
+                                        size="mini"
+                                        style="width: 100%;">
+                                    <el-option
+                                            v-for="item in categoryOptions"
+                                            :key="item.id"
+                                            :label="item.name"
+                                            :value="item.id">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+
+                    <el-row :gutter="10">
+                        <el-col :span="8">
+                            <el-form-item label="用户">
+                                <el-select
+                                        v-model="queryForm.users"
+                                        multiple
+                                        filterable
+                                        remote
+                                        collapse-tags
+                                        reserve-keyword
+                                        placeholder="搜索用户"
+                                        :remote-method="remoteSearchUsers"
+                                        :loading="userLoading"
+                                        size="mini"
+                                        style="width: 100%;">
+                                    <el-option
+                                            v-for="item in userOptions"
+                                            :key="item.id"
+                                            :label="item.name"
+                                            :value="item.id">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="8">
+                            <el-form-item label="标题长度" class="compact-slider">
+                                <el-slider
+                                        v-model="queryForm.titleLengthRange"
+                                        range
+                                        :min="0"
+                                        :max="100"
+                                        :height="18"
+                                        :marks="{0:'0', 100:'100'}">
+                                </el-slider>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="8">
+                            <el-form-item label="内容长度" class="compact-slider">
+                                <el-slider
+                                        v-model="queryForm.contentLengthRange"
+                                        range
+                                        :min="0"
+                                        :max="2000"
+                                        :height="18"
+                                        :marks="{0:'0', 2000:'2k'}">
+                                </el-slider>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+
+                    <el-form-item class="action-buttons">
+                        <el-button type="primary" size="mini" @click="executeQuery" :loading="queryLoading">查询</el-button>
+                        <el-button size="mini" @click="resetQuery">重置</el-button>
+                        <el-dropdown trigger="click" @command="handleExportCommand" size="mini">
+                            <el-button type="success" size="mini">
+                                导出<i class="el-icon-arrow-down el-icon--right"></i>
+                            </el-button>
+                            <el-dropdown-menu slot="dropdown">
+                                <el-dropdown-item command="excel">Excel</el-dropdown-item>
+                                <el-dropdown-item command="csv">CSV</el-dropdown-item>
+                                <el-dropdown-item command="image">图表图片</el-dropdown-item>
+                            </el-dropdown-menu>
+                        </el-dropdown>
+                    </el-form-item>
+                </el-form>
+
+                <div class="result-container expanded">
+                    <div v-if="queryLoading" class="loading-container">
+                        <i class="el-icon-loading"></i>
+                        <p>查询数据中，请稍候...</p>
+                    </div>
+                    <div v-else-if="!hasResults" class="no-data">
+                        <i class="el-icon-search"></i>
+                        <p>请设置查询条件并点击查询按钮</p>
+                    </div>
+                    <div v-else class="result-content">
+                        <el-tabs v-model="activeTab" @tab-click="handleTabClick" size="small">
+                            <el-tab-pane label="表格数据" name="table">
+                                <el-table :data="tableData" height="100%" border style="width: 100%">
+                                    <el-table-column prop="id" label="ID" width="80"></el-table-column>
+                                    <el-table-column prop="headline" label="标题" show-overflow-tooltip></el-table-column>
+                                    <el-table-column prop="topic" label="主题" width="100"></el-table-column>
+                                    <el-table-column prop="category" label="分类" width="100"></el-table-column>
+                                    <el-table-column prop="publishDate" label="发布日期" width="100"></el-table-column>
+                                    <el-table-column width="60">
+                                        <template slot-scope="scope">
+                                            <el-button type="text" size="mini" @click="viewNewsDetail(scope.row)">详情</el-button>
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+                                <div class="pagination-container">
+                                    <el-pagination
+                                            @size-change="handleSizeChange"
+                                            @current-change="handleCurrentChange"
+                                            :current-page="currentPage"
+                                            :page-sizes="[10, 20, 50, 100]"
+                                            :page-size="pageSize"
+                                            size="small"
+                                            layout="total, sizes, prev, pager, next, jumper"
+                                            :total="total">
+                                    </el-pagination>
+                                </div>
+                            </el-tab-pane>
+                            <el-tab-pane label="统计图表" name="chart">
+                                <div class="chart-wrapper" ref="chartContainer"></div>
+                            </el-tab-pane>
+                        </el-tabs>
+                    </div>
+                </div>
+            </div>
+        </el-col>
+        <el-col :span="8" class="chat-container">
+            <div class="chat-header">
+                <span>智能助手</span>
+            </div>
+            <div class="chat-messages" ref="chatMessages">
+                <div v-for="(message, index) in messages" :key="index"
+                     :class="['message', message.type === 'user' ? 'user-message' : 'bot-message']">
+                    <div class="message-content">{{ message.content }}</div>
+                </div>
+            </div>
+            <div class="chat-input">
+                <el-input
+                        v-model="userInput"
+                        placeholder="输入您的分析需求..."
+                        @keyup.enter.native="sendMessage">
+                </el-input>
+                <el-button type="primary" icon="el-icon-s-promotion" @click="sendMessage"></el-button>
+            </div>
+        </el-col>
+    </el-row>
+</div>

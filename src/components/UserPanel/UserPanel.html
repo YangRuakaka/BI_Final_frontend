@@ -1,0 +1,111 @@
+<div id="userpanel" class="viewcontainer">
+    <el-row>
+        <el-col :span="24">
+            <div class="viewheader">用户面板</div>
+        </el-col>
+    </el-row>
+    <el-row>
+        <div class="viewbody">
+            <el-row :gutter="10">
+                <!-- 左侧用户列表 -->
+                <el-col :span="8" class="user-list-container">
+                    <div class="section-header">用户列表</div>
+
+                    <!-- 搜索框 -->
+                    <el-input
+                            v-model="searchText"
+                            placeholder="搜索用户ID..."
+                            prefix-icon="el-icon-search"
+                            clearable
+                            class="user-search">
+                    </el-input>
+
+                    <!-- 用户表格 -->
+                    <el-table
+                            :data="filteredUserList"
+                            style="width: 100%"
+                            height="350"
+                            @row-click="handleRowClick"
+                            highlight-current-row>
+                        <el-table-column
+                                prop="id"
+                                label="用户ID"
+                                width="120">
+                        </el-table-column>
+                    </el-table>
+                </el-col>
+
+                <!-- 中间用户喜好部分 -->
+                <el-col :span="8" class="user-profile-container">
+                    <div class="section-header" v-if="selectedUser">
+                        用户喜好分析
+                        <div class="time-label">{{ timePoints[currentTimeIndex] }}</div>
+                    </div>
+                    <div class="section-header" v-else>请选择用户</div>
+
+                    <!-- 兴趣饼图 -->
+                    <div id="preference-chart" class="preference-chart"></div>
+                </el-col>
+
+                <!-- 右侧推荐新闻部分 -->
+                <el-col :span="8" class="recommendation-container">
+                    <div class="section-header" v-if="selectedUser">
+                        推荐新闻
+                        <div class="time-label">{{ timePoints[currentTimeIndex] }}</div>
+                    </div>
+                    <div class="section-header" v-else>请选择用户</div>
+
+                    <!-- 推荐新闻列表 -->
+                    <div class="news-list" v-if="selectedUser">
+                        <div v-for="news in getCurrentRecommendedNews()" :key="news.id" class="news-item">
+                            <div class="news-category">
+                                <el-tag :color="getCategoryColor(news.category)" size="mini" class="white-text">
+                                    {{ news.category }}
+                                </el-tag>
+                            </div>
+                            <div class="news-headline">{{ news.headline }}</div>
+                        </div>
+                        <div v-if="getCurrentRecommendedNews().length === 0" class="no-data">
+                            当前时间点无推荐新闻
+                        </div>
+                    </div>
+                    <div class="no-user-selected" v-else>
+                        <i class="el-icon-info"></i> 请从左侧选择用户
+                    </div>
+                </el-col>
+            </el-row>
+
+            <!-- 底部时间轴控制 -->
+            <el-row class="timeline-container" v-if="selectedUser">
+                <el-col :span="24">
+                    <div class="timeline-controls">
+                        <el-button
+                                size="mini"
+                                :icon="isPlaying ? 'el-icon-video-pause' : 'el-icon-video-play'"
+                                @click="isPlaying ? stopPlayback() : startPlayback()">
+                            {{ isPlaying ? '暂停' : '播放' }}
+                        </el-button>
+
+                        <el-slider
+                                v-model="currentTimeIndex"
+                                :min="0"
+                                :max="timePoints.length - 1"
+                                :format-tooltip="index => timePoints[index]"
+                                class="timeline-slider">
+                        </el-slider>
+                    </div>
+                    <div class="timeline-markers">
+                        <div
+                                v-for="(time, index) in timePoints"
+                                :key="index"
+                                class="time-marker"
+                                :class="{ active: index === currentTimeIndex }"
+                                @click="setTimePoint(index)">
+                            {{ time.split(' ')[1] }}
+                        </div>
+                    </div>
+                </el-col>
+            </el-row>
+        </div>
+    </el-row>
+</div>
