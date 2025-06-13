@@ -70,6 +70,14 @@
                                 show-overflow-tooltip>
                         </el-table-column>
                     </el-table>
+                    <el-pagination
+                            @current-change="handlePageChange"
+                            :current-page="currentPage"
+                            :page-size="pageSize"
+                            :total="total"
+                            layout="prev, pager, next, total"
+                            class="pagination">
+                    </el-pagination>
                 </el-col>
                 <!-- 右侧热度图表区域 -->
                 <el-col :span="12" class="news-chart-container">

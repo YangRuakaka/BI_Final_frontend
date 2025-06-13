@@ -266,7 +266,6 @@
 }
 
 .compact-slider .el-slider__button-wrapper {
-  height: 18px;
   width: 18px;
   top: -7px;
 }

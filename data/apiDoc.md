@@ -1,61 +1,28 @@
-# 新闻数据系统API文档
-
-## 基础信息
-
-- 基础URL: `https://api.news-analytics.com/v1`
-- 所有请求应包含头部: `Content-Type: application/json`
-- 认证: 使用Bearer Token: `Authorization: Bearer {token}`
+当然可以，下面是根据你的数据库结构和Redis设计优化后的新闻数据系统API文档，包含接口命名、接口说明（支持Markdown）、请求参数类型（param/body）、参数名、类型、示例值、详细说明，以及返回示例。可以直接用在API设计平台（如APIfox、YApi、Postman等）。
 
 ---
 
-### 1. 获取新闻列表 API
+## 1. 新闻列表分页查询
 
-**接口地址**  
-`GET /news`
+**接口命名**  
+GET /news
 
-**功能说明**  
-分页获取新闻列表，支持按分类、主题、关键词筛选及排序。
+**接口说明**  
+分页获取新闻列表，支持按分类、主题、关键词筛选及排序。  
+可用于新闻列表页、筛选、搜索等场景。
 
-**请求参数**
+### 请求参数
 
-| 参数名      | 类型    | 必填 | 说明                         |
-|-------------|---------|------|------------------------------|
-| category    | string  | 否   | 分类过滤（如 sports, tech）   |
-| topic       | string  | 否   | 主题过滤（如 soccer, ai）     |
-| searchText  | string  | 否   | 标题或实体关键词模糊搜索      |
-| page        | integer | 否   | 页码，默认1                   |
-| pageSize    | integer | 否   | 每页条数，默认20，最大100      |
-| sortOrder   | string  | 否   | 排序方向（asc, desc），默认desc|
+| 参数名     | 类型    | 示例值           | 来源   | 说明                   |
+|------------|---------|------------------|--------|------------------------|
+| category   | string  | sports           | param  | 新闻分类（选填）       |
+| topic      | string  | soccer           | param  | 新闻主题（选填）       |
+| searchText | string  | Atlanta          | param  | 标题或实体关键词（选填）|
+| page       | integer | 1                | param  | 页码，默认1（选填）    |
+| pageSize   | integer | 20               | param  | 每页条数，默认20，最大100（选填）|
+| sortOrder  | string  | desc             | param  | 排序方向asc/desc，默认desc|
 
-**请求示例**
-
-```
-GET /news?category=sports&topic=soccer&searchText=Atlanta&page=2&pageSize=20&sortOrder=desc
-```
-
-**返回参数**
-
-| 字段         | 类型    | 说明                       |
-|--------------|---------|----------------------------|
-| code         | integer | 状态码，200为成功           |
-| message      | string  | 返回信息                    |
-| timestamp    | integer | 响应时间戳（毫秒级）        |
-| elapsed      | integer | 查询耗时（单位ms）          |
-| data.total   | integer | 总记录数                    |
-| data.page    | integer | 当前页码                    |
-| data.pageSize| integer | 每页条数                    |
-| data.items   | array   | 新闻列表                    |
-
-**data.items 单条结构**
-
-| 字段            | 类型    | 说明                       |
-|------------------|---------|----------------------------|
-| id              | string  | 新闻ID                      |
-| category        | string  | 分类                        |
-| topic           | string  | 主题                        |
-| title           | string  | 标题                        |
-
-**返回示例**
+### 返回示例
 
 ```json
 {
@@ -82,31 +49,22 @@ GET /news?category=sports&topic=soccer&searchText=Atlanta&page=2&pageSize=20&sor
 
 ---
 
-### 2. 获取单条新闻详情
+## 2. 获取新闻详情
 
-**接口地址**  
-`GET /news/{newsId}`
+**接口命名**  
+GET /news/{newsId}
 
-**功能说明**  
-获取单个新闻的详细信息。
+**接口说明**  
+获取单个新闻的详细信息。  
+适用于详情页、弹窗等场景。
 
-**路径参数**
+### 请求参数
 
-| 参数名 | 类型   | 必填 | 描述     |
-|--------|--------|------|----------|
-| newsId | string | 是   | 新闻ID   |
+| 参数名 | 类型   | 示例值   | 来源   | 说明     |
+|--------|--------|----------|--------|----------|
+| newsId | string | N10001   | param  | 新闻ID（路径参数，必填）|
 
-**返回参数**
-
-| 字段         | 类型    | 说明                       |
-|--------------|---------|----------------------------|
-| code         | integer | 状态码，200为成功           |
-| message      | string  | 返回信息                    |
-| timestamp    | integer | 响应时间戳（毫秒级）        |
-| elapsed      | integer | 查询耗时（单位ms）          |
-| data         | object  | 新闻详情                    |
-
-**返回示例**
+### 返回示例
 
 ```json
 {
@@ -129,39 +87,25 @@ GET /news?category=sports&topic=soccer&searchText=Atlanta&page=2&pageSize=20&sor
 
 ---
 
-### 3. 获取单条新闻热度历史
+## 3. 获取新闻热度历史
 
-**接口地址**  
-`GET /news/{newsId}/popularity`
+**接口命名**  
+GET /news/{newsId}/popularity
 
-**功能说明**  
-获取指定新闻ID在时间区间内的热度变化（如点击量）。
+**接口说明**  
+获取新闻在指定时间区间内的热度（点击量）变化。  
+适合做新闻趋势图。
 
-**路径参数**
+### 请求参数
 
-| 参数名  | 类型   | 必填 | 描述     |
-|---------|--------|------|----------|
-| newsId  | string | 是   | 新闻ID   |
+| 参数名    | 类型   | 示例值         | 来源   | 说明                         |
+|-----------|--------|----------------|--------|------------------------------|
+| newsId    | string | N10001         | param  | 新闻ID（路径参数，必填）     |
+| startDate | string | 2023-07-01     | param  | 开始日期 YYYY-MM-DD，必填    |
+| endDate   | string | 2023-07-31     | param  | 结束日期 YYYY-MM-DD，必填    |
+| interval  | string | day            | param  | 时间间隔 day/hour，默认day（选填）|
 
-**查询参数**
-
-| 参数名    | 类型   | 必填 | 描述                         |
-|-----------|--------|------|------------------------------|
-| startDate | string | 是   | 开始日期 (YYYY-MM-DD)        |
-| endDate   | string | 是   | 结束日期 (YYYY-MM-DD)        |
-| interval  | string | 否   | 时间间隔 (day, hour)，默认day |
-
-**返回参数**
-
-| 字段         | 类型    | 说明                       |
-|--------------|---------|----------------------------|
-| code         | integer | 状态码，200为成功           |
-| message      | string  | 返回信息                    |
-| timestamp    | integer | 响应时间戳（毫秒级）        |
-| elapsed      | integer | 查询耗时（单位ms）          |
-| data         | array   | 热度历史数据                |
-
-**返回示例**
+### 返回示例
 
 ```json
 {
@@ -171,42 +115,32 @@ GET /news?category=sports&topic=soccer&searchText=Atlanta&page=2&pageSize=20&sor
   "elapsed": 20,
   "data": [
     {"date": "2023-07-04", "count": 45},
-    {"date": "2023-07-05", "count": 52},
-    {"date": "2023-07-06", "count": 60}
+    {"date": "2023-07-05", "count": 52}
   ]
 }
 ```
 
 ---
 
-### 4. 获取分类热度历史数据
+## 4. 获取分类热度历史
 
-**接口地址**  
-`GET /categories/popularity`
+**接口命名**  
+GET /categories/popularity
 
-**功能说明**  
-获取新闻分类的热度历史数据。
+**接口说明**  
+获取一个或多个新闻分类的热度历史数据。  
+适合做分类趋势对比。
 
-**查询参数**
+### 请求参数
 
-| 参数名      | 类型   | 必填 | 描述                         |
-|-------------|--------|------|------------------------------|
-| categories  | string | 否   | 分类名称列表，多个分类用逗号分隔 |
-| startDate   | string | 是   | 开始日期 (YYYY-MM-DD)        |
-| endDate     | string | 是   | 结束日期 (YYYY-MM-DD)        |
-| interval    | string | 否   | 时间间隔 (day, hour)，默认day |
+| 参数名      | 类型   | 示例值           | 来源   | 说明                              |
+|-------------|--------|------------------|--------|-----------------------------------|
+| categories  | string | sports,tech      | param  | 分类列表（多个用逗号分隔，选填）  |
+| startDate   | string | 2023-07-01       | param  | 开始日期 YYYY-MM-DD，必填         |
+| endDate     | string | 2023-07-31       | param  | 结束日期 YYYY-MM-DD，必填         |
+| interval    | string | day              | param  | 时间间隔 day/hour，默认day（选填）|
 
-**返回参数**
-
-| 字段         | 类型    | 说明                       |
-|--------------|---------|----------------------------|
-| code         | integer | 状态码，200为成功           |
-| message      | string  | 返回信息                    |
-| timestamp    | integer | 响应时间戳（毫秒级）        |
-| elapsed      | integer | 查询耗时（单位ms）          |
-| data         | object  | 分类热度历史数据            |
-
-**返回示例**
+### 返回示例
 
 ```json
 {
@@ -216,12 +150,10 @@ GET /news?category=sports&topic=soccer&searchText=Atlanta&page=2&pageSize=20&sor
   "elapsed": 25,
   "data": {
     "sports": [
-      {"date": "2023-07-04", "count": 240},
-      {"date": "2023-07-05", "count": 269}
+      {"date": "2023-07-04", "count": 240}
     ],
     "technology": [
-      {"date": "2023-07-04", "count": 305},
-      {"date": "2023-07-05", "count": 340}
+      {"date": "2023-07-04", "count": 305}
     ]
   }
 }
@@ -229,34 +161,23 @@ GET /news?category=sports&topic=soccer&searchText=Atlanta&page=2&pageSize=20&sor
 
 ---
 
-### 5. 获取用户浏览历史流数据
+## 5. 获取用户浏览历史流数据
 
-**接口地址**  
-`GET /users/{userId}/browse-history`
+**接口命名**  
+GET /users/{userId}/browse-history
 
-**功能说明**  
-获取指定用户的浏览历史数据。
+**接口说明**  
+获取指定用户的浏览历史（明细流数据）。
 
-**路径参数**
+### 请求参数
 
-| 参数名  | 类型   | 必填 | 描述     |
-|---------|--------|------|----------|
-| userId  | string | 是   | 用户ID   |
+| 参数名   | 类型    | 示例值   | 来源   | 说明               |
+|----------|---------|----------|--------|--------------------|
+| userId   | string  | U335175  | param  | 用户ID（路径参数，必填）|
+| page     | integer | 1        | param  | 页码，默认1（选填）|
+| pageSize | integer | 20       | param  | 每页条数，默认20（选填）|
 
-**返回参数**
-
-| 字段         | 类型    | 说明                       |
-|--------------|---------|----------------------------|
-| code         | integer | 状态码，200为成功           |
-| message      | string  | 返回信息                    |
-| timestamp    | integer | 响应时间戳（毫秒级）        |
-| elapsed      | integer | 查询耗时（单位ms）          |
-| data.total   | integer | 总记录数                    |
-| data.page    | integer | 当前页码                    |
-| data.pageSize| integer | 每页条数                    |
-| data.items   | array   | 浏览历史数据                |
-
-**返回示例**
+### 返回示例
 
 ```json
 {
@@ -274,12 +195,6 @@ GET /news?category=sports&topic=soccer&searchText=Atlanta&page=2&pageSize=20&sor
         "newsId": "N10001",
         "category": "sports",
         "headline": "Predicting Atlanta United's lineup against Columbus Crew"
-      },
-      {
-        "timestamp": 1689325200000,
-        "newsId": "N10015",
-        "category": "technology",
-        "headline": "AI Revolutionizes Healthcare"
       }
     ]
   }
@@ -288,37 +203,22 @@ GET /news?category=sports&topic=soccer&searchText=Atlanta&page=2&pageSize=20&sor
 
 ---
 
-### 6. 获取用户某时刻推荐新闻
+## 6. 获取用户推荐新闻
 
-**接口地址**  
-`GET /users/{userId}/recommendations`
+**接口命名**  
+GET /users/{userId}/recommendations
 
-**功能说明**  
-获取指定用户在某时刻的推荐新闻。
+**接口说明**  
+获取指定用户在某时刻的推荐新闻（Redis缓存）。
 
-**路径参数**
+### 请求参数
 
-| 参数名  | 类型   | 必填 | 描述     |
-|---------|--------|------|----------|
-| userId  | string | 是   | 用户ID   |
+| 参数名    | 类型    | 示例值         | 来源   | 说明                         |
+|-----------|---------|----------------|--------|------------------------------|
+| userId    | string  | U335175        | param  | 用户ID（路径参数，必填）     |
+| timestamp | integer | 1718000000000  | param  | 毫秒级时间戳，必填           |
 
-**查询参数**
-
-| 参数名    | 类型   | 必填 | 描述                         |
-|-----------|--------|------|------------------------------|
-| timestamp | integer | 是   | 查询时间（毫秒级时间戳）     |
-
-**返回参数**
-
-| 字段         | 类型    | 说明                       |
-|--------------|---------|----------------------------|
-| code         | integer | 状态码，200为成功           |
-| message      | string  | 返回信息                    |
-| timestamp    | integer | 响应时间戳（毫秒级）        |
-| elapsed      | integer | 查询耗时（单位ms）          |
-| data         | array   | 推荐新闻列表                |
-
-**返回示例**
+### 返回示例
 
 ```json
 {
@@ -330,76 +230,36 @@ GET /news?category=sports&topic=soccer&searchText=Atlanta&page=2&pageSize=20&sor
     {
       "newsId": "N10001",
       "headline": "Predicting Atlanta United's lineup against Columbus Crew"
-    },
-    {
-      "newsId": "N10015",
-      "headline": "AI Revolutionizes Healthcare"
     }
   ]
 }
 ```
 
-### 7. 统计查询 API
+---
 
-**接口地址**  
-`GET /statistics`
+## 7. 统计查询
 
-**功能说明**  
-根据时间、时间段、新闻主题、新闻标题长度、新闻长度、特定用户、特定多个用户等条件进行统计查询。
+**接口命名**  
+GET /statistics
 
-**请求参数**
+**接口说明**  
+根据多条件统计新闻与用户点击量，支持时间范围、主题、标题内容长度、用户等。
 
-| 参数名          | 类型    | 必填 | 说明                                   |
-|------------------|---------|------|----------------------------------------|
-| startDate        | string  | 否   | 开始日期 (YYYY-MM-DD)                  |
-| endDate          | string  | 否   | 结束日期 (YYYY-MM-DD)                  |
-| topic            | string  | 否   | 新闻主题                               |
-| titleLengthMin   | integer | 否   | 新闻标题最小长度                       |
-| titleLengthMax   | integer | 否   | 新闻标题最大长度                       |
-| contentLengthMin | integer | 否   | 新闻内容最小长度                       |
-| contentLengthMax | integer | 否   | 新闻内容最大长度                       |
-| userId           | string  | 否   | 特定用户ID                             |
-| userIds          | array   | 否   | 特定多个用户ID                         |
+### 请求参数
 
-**请求示例**
+| 参数名          | 类型    | 示例值   | 来源   | 说明                                   |
+|------------------|---------|----------|--------|----------------------------------------|
+| startDate        | string  | 2023-07-01 | param | 开始日期 YYYY-MM-DD（选填）            |
+| endDate          | string  | 2023-07-31 | param | 结束日期 YYYY-MM-DD（选填）            |
+| topic            | string  | sports     | param | 新闻主题（选填）                       |
+| titleLengthMin   | integer | 10         | param | 标题最小长度（选填）                   |
+| titleLengthMax   | integer | 50         | param | 标题最大长度（选填）                   |
+| contentLengthMin | integer | 100        | param | 内容最小长度（选填）                   |
+| contentLengthMax | integer | 2000       | param | 内容最大长度（选填）                   |
+| userId           | string  | U335175    | param | 用户ID（选填）                         |
+| userIds          | string  | U10001,U10002 | param | 多个用户ID，逗号分隔（选填）           |
 
-```
-GET /statistics?startDate=2023-07-01&endDate=2023-07-31&topic=sports&titleLengthMin=10&titleLengthMax=50&userIds=U10001,U10002
-```
-
-**返回参数**
-
-| 字段         | 类型    | 说明                       |
-|--------------|---------|----------------------------|
-| code         | integer | 状态码，200为成功           |
-| message      | string  | 返回信息                    |
-| timestamp    | integer | 响应时间戳（毫秒级）        |
-| elapsed      | integer | 查询耗时（单位ms）          |
-| data         | object  | 统计结果                    |
-
-**data 结构**
-
-| 字段         | 类型    | 说明                       |
-|--------------|---------|----------------------------|
-| totalClicks  | integer | 总点击量                   |
-| userStats    | array   | 用户统计数据               |
-| newsStats    | array   | 新闻统计数据               |
-
-**userStats 单条结构**
-
-| 字段         | 类型    | 说明                       |
-|--------------|---------|----------------------------|
-| userId       | string  | 用户ID                     |
-| clickCount   | integer | 用户点击新闻的次数         |
-
-**newsStats 单条结构**
-
-| 字段         | 类型    | 说明                       |
-|--------------|---------|----------------------------|
-| newsId       | string  | 新闻ID                     |
-| clickCount   | integer | 新闻被点击的次数           |
-
-**返回示例**
+### 返回示例
 
 ```json
 {
@@ -413,135 +273,35 @@ GET /statistics?startDate=2023-07-01&endDate=2023-07-31&topic=sports&titleLength
       {
         "userId": "U10001",
         "clickCount": 120
-      },
-      {
-        "userId": "U10002",
-        "clickCount": 85
       }
     ],
     "newsStats": [
       {
         "newsId": "N10001",
         "clickCount": 200
-      },
-      {
-        "newsId": "N10015",
-        "clickCount": 150
       }
     ]
   }
 }
 ```
 
-### 8. 统计查询 API
+---
 
-**接口地址**  
-`GET /statistics`
+## 8. 智能助手对话接口
 
-**功能说明**  
-根据时间、时间段、新闻主题、新闻标题长度、新闻长度、特定用户、特定多个用户等条件进行统计查询。
+**接口命名**  
+POST /agent/message
 
-**请求参数**
+**接口说明**  
+调用LLM智能Agent，根据用户输入自动生成回复内容。
 
-| 参数名          | 类型    | 必填 | 说明                                   |
-|------------------|---------|------|----------------------------------------|
-| startDate        | string  | 否   | 开始日期 (YYYY-MM-DD)                  |
-| endDate          | string  | 否   | 结束日期 (YYYY-MM-DD)                  |
-| topic            | string  | 否   | 新闻主题                               |
-| titleLengthMin   | integer | 否   | 新闻标题最小长度                       |
-| titleLengthMax   | integer | 否   | 新闻标题最大长度                       |
-| contentLengthMin | integer | 否   | 新闻内容最小长度                       |
-| contentLengthMax | integer | 否   | 新闻内容最大长度                       |
-| userId           | string  | 否   | 特定用户ID                             |
-| userIds          | array   | 否   | 特定多个用户ID                         |
+### 请求参数
 
-**请求示例**
+| 参数名  | 类型   | 示例值                 | 来源 | 说明         |
+|---------|--------|------------------------|------|--------------|
+| message | string | 请帮我分析最近的新闻热点 | body | 用户输入内容（必填）|
 
-```
-GET /statistics?startDate=2023-07-01&endDate=2023-07-31&topic=sports&titleLengthMin=10&titleLengthMax=50&userIds=U10001,U10002
-```
-
-**返回参数**
-
-| 字段         | 类型    | 说明                       |
-|--------------|---------|----------------------------|
-| code         | integer | 状态码，200为成功           |
-| message      | string  | 返回信息                    |
-| timestamp    | integer | 响应时间戳（毫秒级）        |
-| elapsed      | integer | 查询耗时（单位ms）          |
-| data         | object  | 统计结果                    |
-
-**data 结构**
-
-| 字段         | 类型    | 说明                       |
-|--------------|---------|----------------------------|
-| totalClicks  | integer | 总点击量                   |
-| userStats    | array   | 用户统计数据               |
-| newsStats    | array   | 新闻统计数据               |
-
-**userStats 单条结构**
-
-| 字段         | 类型    | 说明                       |
-|--------------|---------|----------------------------|
-| userId       | string  | 用户ID                     |
-| clickCount   | integer | 用户点击新闻的次数         |
-
-**newsStats 单条结构**
-
-| 字段         | 类型    | 说明                       |
-|--------------|---------|----------------------------|
-| newsId       | string  | 新闻ID                     |
-| clickCount   | integer | 新闻被点击的次数           |
-
-**返回示例**
-
-```json
-{
-  "code": 200,
-  "message": "success",
-  "timestamp": 1718000000000,
-  "elapsed": 45,
-  "data": {
-    "totalClicks": 12345,
-    "userStats": [
-      {
-        "userId": "U10001",
-        "clickCount": 120
-      },
-      {
-        "userId": "U10002",
-        "clickCount": 85
-      }
-    ],
-    "newsStats": [
-      {
-        "newsId": "N10001",
-        "clickCount": 200
-      },
-      {
-        "newsId": "N10015",
-        "clickCount": 150
-      }
-    ]
-  }
-}
-```
-
-### 10. 调用LLM Agent API
-
-**接口地址**  
-`POST /agent/message`
-
-**功能说明**  
-传入用户消息，调用LLM Agent生成回复消息。
-
-**请求参数**
-
-| 参数名   | 类型   | 必填 | 说明         |
-|----------|--------|------|--------------|
-| message  | string | 是   | 用户输入的消息 |
-
-**请求示例**
+#### 请求体示例
 
 ```json
 {
@@ -549,23 +309,7 @@ GET /statistics?startDate=2023-07-01&endDate=2023-07-31&topic=sports&titleLength
 }
 ```
 
-**返回参数**
-
-| 字段         | 类型    | 说明                       |
-|--------------|---------|----------------------------|
-| code         | integer | 状态码，200为成功           |
-| message      | string  | 返回信息                    |
-| timestamp    | integer | 响应时间戳（毫秒级）        |
-| elapsed      | integer | 查询耗时（单位ms）          |
-| data         | object  | 返回的消息内容              |
-
-**data 结构**
-
-| 字段         | 类型   | 说明         |
-|--------------|--------|--------------|
-| replyMessage | string | LLM Agent生成的回复 |
-
-**返回示例**
+### 返回示例
 
 ```json
 {
@@ -578,3 +322,7 @@ GET /statistics?startDate=2023-07-01&endDate=2023-07-31&topic=sports&titleLength
   }
 }
 ```
+
+---
+
+如需更细致的接口补充、错误码、鉴权header等请继续告知！

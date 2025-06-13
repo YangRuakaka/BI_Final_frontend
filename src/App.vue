@@ -1,7 +1,14 @@
 <template>
   <div id="app" style="width: 100%">
     <el-container>
-      <el-header id="systemHeader">BI</el-header>
+      <el-header id="systemHeader">
+        <div class="header-content">
+          <span class="logo">BI</span>
+          <div class="header-right">
+            <clock></clock>
+          </div>
+        </div>
+      </el-header>
       <el-main id="systemMain">
         <el-row :gutter="4">
           <el-col :span="8" style="padding:2px;">
@@ -30,14 +37,15 @@ import NewsPanel from "./components/NewsPanel/NewsPanel.vue"
 import UserPanel from "./components/UserPanel/UserPanel.vue"
 import LogView from "./components/LogView/LogView.vue"
 import AnalysisView from "./components/AnalysisView/AnalysisView.vue"
-
+import Clock from './components/clock/clock.vue'
 export default {
   name: "app",
   components: {
     UserPanel,
     NewsPanel,
     LogView,
-    AnalysisView
+    AnalysisView,
+    Clock
   },
   data() {
     return {};
@@ -93,5 +101,24 @@ export default {
 
 .viewbody {
   height: 325px;
+}
+
+/* 在App.vue的style部分添加 */
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+}
+
+.logo {
+  font-weight: bold;
+  font-size: 25px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  height: 100%;
 }
 </style>

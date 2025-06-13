@@ -30,7 +30,7 @@
                         <el-table-column
                                 prop="id"
                                 label="用户ID"
-                                width="120">
+                                width="220">
                         </el-table-column>
                     </el-table>
                 </el-col>
@@ -45,6 +45,22 @@
 
                     <!-- 兴趣饼图 -->
                     <div id="preference-chart" class="preference-chart"></div>
+
+                    <!-- 添加用户兴趣数据表格 -->
+                    <div class="preference-table" v-if="selectedUser && currentPreferenceData.length > 0">
+                        <el-table
+                                :data="currentPreferenceData"
+                                size="mini"
+                                style="width: 100%; margin-top: 10px;">
+                            <el-table-column prop="name" label="兴趣分类" width="120"></el-table-column>
+                            <el-table-column prop="value" label="兴趣值"></el-table-column>
+                            <el-table-column prop="percentage" label="占比">
+                                <template slot-scope="scope">
+                                    {{ scope.row.percentage }}%
+                                </template>
+                            </el-table-column>
+                        </el-table>
+                    </div>
                 </el-col>
 
                 <!-- 右侧推荐新闻部分 -->
@@ -57,55 +73,32 @@
 
                     <!-- 推荐新闻列表 -->
                     <div class="news-list" v-if="selectedUser">
-                        <div v-for="news in getCurrentRecommendedNews()" :key="news.id" class="news-item">
-                            <div class="news-category">
-                                <el-tag :color="getCategoryColor(news.category)" size="mini" class="white-text">
-                                    {{ news.category }}
-                                </el-tag>
+                        <div v-if="newsLoading" class="loading-container">
+                            <i class="el-icon-loading"></i>
+                            <p>加载推荐新闻中...</p>
+                        </div>
+                        <template v-else>
+                            <div v-for="news in getCurrentRecommendedNews()" :key="news.id" class="news-item">
+                                <div class="news-category">
+                                    <el-tag :color="getCategoryColor(news.category)" size="mini" class="white-text">
+                                        {{ news.category }}
+                                    </el-tag>
+                                </div>
+                                <div class="news-headline">{{ news.headline }}</div>
                             </div>
-                            <div class="news-headline">{{ news.headline }}</div>
-                        </div>
-                        <div v-if="getCurrentRecommendedNews().length === 0" class="no-data">
-                            当前时间点无推荐新闻
-                        </div>
+                            <div v-if="getCurrentRecommendedNews().length === 0" class="no-data">
+                                当前时间点无推荐新闻
+                            </div>
+                        </template>
                     </div>
                     <div class="no-user-selected" v-else>
                         <i class="el-icon-info"></i> 请从左侧选择用户
                     </div>
                 </el-col>
             </el-row>
-
-            <!-- 底部时间轴控制 -->
-            <el-row class="timeline-container" v-if="selectedUser">
-                <el-col :span="24">
-                    <div class="timeline-controls">
-                        <el-button
-                                size="mini"
-                                :icon="isPlaying ? 'el-icon-video-pause' : 'el-icon-video-play'"
-                                @click="isPlaying ? stopPlayback() : startPlayback()">
-                            {{ isPlaying ? '暂停' : '播放' }}
-                        </el-button>
-
-                        <el-slider
-                                v-model="currentTimeIndex"
-                                :min="0"
-                                :max="timePoints.length - 1"
-                                :format-tooltip="index => timePoints[index]"
-                                class="timeline-slider">
-                        </el-slider>
-                    </div>
-                    <div class="timeline-markers">
-                        <div
-                                v-for="(time, index) in timePoints"
-                                :key="index"
-                                class="time-marker"
-                                :class="{ active: index === currentTimeIndex }"
-                                @click="setTimePoint(index)">
-                            {{ time.split(' ')[1] }}
-                        </div>
-                    </div>
-                </el-col>
-            </el-row>
         </div>
     </el-row>
+    <div id="large-chart-modal" v-show="isLargeChartVisible" @mouseleave="hideLargeChart">
+        <div id="large-preference-chart"></div>
+    </div>
 </div>

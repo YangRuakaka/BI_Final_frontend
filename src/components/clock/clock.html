@@ -1,0 +1,29 @@
+<div class="clock-container" id="clock">
+    <div class="clock-trigger" @click.stop="toggleClock">
+        <i class="fas fa-clock"></i> {{ formattedTime }}
+    </div>
+    <div v-if="showPanel" class="clock-panel" v-click-outside="hidePanel">
+        <div class="panel-header">
+            <span>系统时间控制</span>
+            <i class="fas fa-times close-icon" @click="hidePanel"></i>
+        </div>
+        <div class="panel-body">
+            <div class="current-time">
+                {{ fullFormattedTime }}
+            </div>
+            <div class="speed-control">
+                <span>速率控制 (1秒={{ speedRatio }}分钟):</span>
+                <el-slider v-model="speedRatio" :min="1" :max="60" :step="1" @change="updateSpeedRatio"></el-slider>
+            </div>
+            <div class="time-control">
+                <el-button size="mini" @click="pauseTime">
+                    <i :class="isPaused ? 'fas fa-play' : 'fas fa-pause'"></i>
+                    {{ isPaused ? '继续' : '暂停' }}
+                </el-button>
+                <el-button size="mini" @click="resetTime">
+                    <i class="fas fa-redo"></i> 重置
+                </el-button>
+            </div>
+        </div>
+    </div>
+</div>
