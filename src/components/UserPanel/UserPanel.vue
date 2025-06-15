@@ -162,4 +162,24 @@
 .preference-table .el-table {
   max-height: 130px;
 }
+
+/* 调整推荐新闻表格样式 */
+.news-list .el-table {
+  font-size: 12px;
+}
+
+.news-list .el-table__row {
+  cursor: pointer;
+}
+
+.news-list .el-table__row:hover {
+  background-color: #f0f9ff;
+}
+
+/* 避免无数据时表格空白区域过大 */
+.no-data {
+  padding: 20px;
+  text-align: center;
+  color: #909399;
+}
 </style>

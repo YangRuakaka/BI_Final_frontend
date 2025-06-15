@@ -48,10 +48,10 @@ export default {
 
             if (this.filterCategory) params.category = this.filterCategory;
             if (this.filterTopic) params.topic = this.filterTopic;
-            if (this.searchText) params.searchText = this.searchText;
+            if (this.searchKeyword) params.searchText = this.searchKeyword; // 使用 searchKeyword 而不是 searchText
 
             return params;
-        }
+        },
     },
     data() {
         return {
@@ -69,7 +69,8 @@ export default {
             hoverChartInstance: null, // 悬浮图表实例
             filterCategory: '', // 分类筛选
             filterTopic: '',    // 主题筛选
-            searchText: '',     // 搜索文本
+            searchText: '',     // 搜索框中的文本
+            searchKeyword: '',  // 实际用于搜索的关键词（按回车后的值）
             selectedNews: [],   // 选中的新闻数组，最多两条
             chartInstance: null // 图表实例
         }
@@ -95,14 +96,35 @@ export default {
             // 初始加载新闻列表
             this.fetchNewsList();
             this.initChart();
+
+            // 监听来自UserPanel的新闻选择事件
+            pipeService.onClickedUsrPanelNews('user-panel-news-selected', (news) => {
+                console.log('收到UserPanel新闻点击事件:', news); // 添加日志，帮助调试
+                this.handleUserPanelNewsSelection(news);
+            });
         });
     },
     methods: {
-        // 从API获取新闻列表
+        handleSearch() {
+            if (this.searchText !== this.searchKeyword) {
+                this.searchKeyword = this.searchText;
+                this.loading = true; // 立即显示加载状态
+                this.currentPage = 1; // 重置到第一页
+                this.fetchNewsList();
+            }
+        },
+
+        // 修改清除搜索功能
+        handleClearSearch() {
+            this.searchText = '';
+            this.searchKeyword = '';
+            this.currentPage = 1;
+            this.fetchNewsList();
+        },
+
         async fetchNewsList() {
             const startTime = performance.now();
-            this.loading = true;
-
+            this.loading = true; // 确保设置加载状态
 
             try {
                 const response = await dataService.queryNewsData(this.newsApiParams);
@@ -127,7 +149,7 @@ export default {
             } catch (error) {
                 console.error('获取新闻列表异常:', error);
             } finally {
-                this.loading = false;
+                this.loading = false; // 无论成功还是失败，都结束加载状态
             }
         },
 
@@ -252,16 +274,31 @@ export default {
         },
 
         getCategoryColor(category) {
+            // 规范化分类名称（转小写）
+            const normalizedCategory = category ? category.toLowerCase() : 'unknown';
+
             const colorMap = {
-                'sports': '#2196F3',
-                'news': '#4CAF50',
-                'foodanddrink': '#FF9800',
-                'weather': '#F44336',
-                'autos': '#9C27B0',
-                'finance': '#00BCD4',
-                'tv': '#8BC34A'
+                'adexperience': '#FF5252',  // 红色
+                'autos': '#9C27B0',         // 紫色
+                'entertainment': '#E91E63', // 粉红色
+                'europe': '#3F51B5',        // 靛蓝色
+                'finance': '#00BCD4',       // 青色
+                'foodanddrink': '#FF9800',  // 橙色
+                'health': '#8BC34A',        // 浅绿色
+                'kids': '#FFEB3B',          // 黄色
+                'lifestyle': '#009688',     // 茶绿色
+                'movies': '#673AB7',        // 深紫色
+                'music': '#F44336',         // 红色
+                'news': '#4CAF50',          // 绿色
+                'northamerica': '#2196F3',  // 蓝色
+                'sports': '#03A9F4',        // 浅蓝色
+                'travel': '#FFC107',        // 琥珀色
+                'tv': '#795548',            // 棕色
+                'video': '#607D8B',         // 蓝灰色
+                'weather': '#F44336'        // 红色
             };
-            return colorMap[category] || '#9E9E9E';
+
+            return colorMap[normalizedCategory] || '#9E9E9E'; // 默认灰色
         },
 
         // 处理行点击事件
@@ -350,7 +387,7 @@ export default {
             };
 
             // 应用配置
-            this.chartInstance.setOption(option);
+            this.chartInstance.setOption(option, true);
             const endTime = performance.now();
             pipeService.emitQueryLog({
                 source: 'NewsPanel',
@@ -361,10 +398,8 @@ export default {
             });
         },
 
-        // 获取图表系列数据
-        // 获取图表系列数据
         getChartSeries() {
-            return this.selectedNews.map(news => {
+            return this.selectedNews.map((news, index) => {
                 const clickData = this.newsClickHistory[news.id] || [];
 
                 // 确保数据与日期范围一致
@@ -373,21 +408,26 @@ export default {
                     return record ? record.count : 0;
                 });
 
+                // 使用新闻分类对应的颜色
+                const color = this.getCategoryColor(news.category);
+
                 return {
                     name: news.headline,
                     type: 'line',
                     data: data,
                     smooth: true,
                     lineStyle: {
-                        color: this.getTopicColor(news.topic),
+                        color: color,
                         width: 3
                     },
                     itemStyle: {
-                        color: this.getTopicColor(news.topic)
+                        color: color
                     },
                     emphasis: {
                         focus: 'series'
-                    }
+                    },
+                    // 添加z值，确保新添加的线条显示在最上层
+                    z: this.selectedNews.length - index
                 };
             });
         },
@@ -435,31 +475,40 @@ export default {
             }
         },
 
-        // 获取主题颜色方法
-        getTopicColor(topic) {
-            const colorMap = {
-                'soccer': '#1565C0',
-                'basketball': '#0D47A1',
-                'tennis': '#0277BD',
-                'ai': '#2E7D32',
-                'space': '#1B5E20',
-                'cybersecurity': '#388E3C',
-                'finance': '#EF6C00',
-                'retail': '#E65100',
-                'automotive': '#F57F17',
-                'elections': '#C62828',
-                'international': '#B71C1C',
-                'legislation': '#D32F2F',
-                'movies': '#7B1FA2',
-                'music': '#6A1B9A',
-                'television': '#4A148C',
-                'research': '#00838F',
-                'nutrition': '#006064',
-                'mental health': '#00695C',
-                'climate': '#558B2F',
-                'medicine': '#33691E'
-            };
-            return colorMap[topic] || '#607D8B';
+        async handleUserPanelNewsSelection(news) {
+            if (!news || !news.newsId) {
+                console.error('接收到无效的新闻数据:', news);
+                return;
+            }
+
+            // 获取更详细的新闻信息
+            console.log('处理来自UserPanel的新闻选择:', news);
+            console.log('正在获取新闻详情:', news.newsId);
+            const newsDetail = await this.fetchNewsDetail(news.newsId);
+            if (!newsDetail) return;
+
+            // 确保分类信息正确
+            if (news.category && !newsDetail.category) {
+                newsDetail.category = news.category;
+            }
+
+            // 检查是否已经在选中列表中
+            const index = this.selectedNews.findIndex(item => item.id === news.newsId);
+            if (index > -1) {
+                // 已经选中则不重复添加
+                return;
+            }
+
+            // 如果已有两条新闻，替换最早的一条
+            if (this.selectedNews.length >= 2) {
+                this.selectedNews.shift();
+            }
+
+            // 添加到选中列表
+            this.selectedNews.push(newsDetail);
+
+            // 确保获取该新闻的热度历史数据
+            this.fetchNewsPopularity(news.newsId);
         },
 
         // 初始化图表

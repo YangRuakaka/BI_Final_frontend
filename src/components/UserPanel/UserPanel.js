@@ -7,15 +7,16 @@ export default {
     components: {},
     props: {},
     computed: {
-        filteredUserList() {
-            if (!this.searchText) {
-                return this.userList;
-            }
+        currentTimeString() {
+            if (!this.systemTime) return '';
 
-            const searchLower = this.searchText.toLowerCase();
-            return this.userList.filter(user => {
-                return user.id.toString().includes(searchLower);
-            });
+            const year = this.systemTime.getFullYear();
+            const month = (this.systemTime.getMonth() + 1).toString().padStart(2, '0');
+            const day = this.systemTime.getDate().toString().padStart(2, '0');
+            const hours = this.systemTime.getHours().toString().padStart(2, '0');
+            const minutes = this.systemTime.getMinutes().toString().padStart(2, '0');
+
+            return `${year}-${month}-${day} ${hours}:${minutes}`;
         },
         currentPreferenceData() {
             if (!this.selectedUser || !this.userPreferences[this.selectedUser.id] ||
@@ -38,25 +39,18 @@ export default {
     },
     data() {
         return {
-            userList: [
-                {id: "U271212"},
-                {id: 1002},
-                {id: 1003},
-                {id: 1004},
-                {id: 1005},
-                {id: 1006},
-                {id: 1007},
-                {id: 1008},
-                {id: 1009},
-                {id: 1010}
-            ],
+            systemTime: null,
+            userList: [],
             selectedUser: null,
             searchText: '',
             currentTimeIndex: 0,  // 当前时间点索引
             isPlaying: false,     // 是否自动播放
             playSpeed: 1000,      // 播放速度(毫秒)
             playInterval: null,   // 播放计时器
-
+            userCurrentPage: 1,   // 用户列表当前页码
+            userPageSize: 20,     // 用户列表每页条数
+            userTotal: 0,         // 用户总数
+            userLoading: false,   // 用户列表加载状态
             // 模拟时间点数据
             timePoints: [
                 "2019-07-10 08:00",
@@ -71,62 +65,25 @@ export default {
                 "2019-07-11 12:00"
             ],
 
-            // 模拟用户数据 - 每个用户在不同时间点的兴趣偏好
-            userPreferences: {
-                1001: [
-                    {technology: 45, business: 25, sports: 15, entertainment: 10, politics: 5},
-                    {technology: 50, business: 20, sports: 15, entertainment: 10, politics: 5},
-                    {technology: 55, business: 20, sports: 10, entertainment: 10, politics: 5},
-                    {technology: 50, business: 25, sports: 10, entertainment: 10, politics: 5},
-                    {technology: 45, business: 30, sports: 10, entertainment: 10, politics: 5},
-                    {technology: 40, business: 35, sports: 10, entertainment: 10, politics: 5},
-                    {technology: 35, business: 40, sports: 10, entertainment: 10, politics: 5},
-                    {technology: 30, business: 45, sports: 10, entertainment: 10, politics: 5},
-                    {technology: 25, business: 50, sports: 10, entertainment: 10, politics: 5},
-                    {technology: 20, business: 55, sports: 10, entertainment: 10, politics: 5}
-                ],
-                1002: [
-                    {business: 50, politics: 30, health: 10, science: 10},
-                    {business: 45, politics: 35, health: 10, science: 10},
-                    {business: 40, politics: 40, health: 10, science: 10},
-                    {business: 35, politics: 45, health: 10, science: 10},
-                    {business: 30, politics: 50, health: 10, science: 10},
-                    {business: 25, politics: 55, health: 10, science: 10},
-                    {business: 20, politics: 60, health: 10, science: 10},
-                    {business: 15, politics: 65, health: 10, science: 10},
-                    {business: 10, politics: 70, health: 10, science: 10},
-                    {business: 5, politics: 75, health: 10, science: 10}
-                ],
-                1003: [
-                    {sports: 70, entertainment: 20, technology: 5, health: 5},
-                    {sports: 65, entertainment: 25, technology: 5, health: 5},
-                    /* 更多时间点... */
-                ],
-                1004: [
-                    {science: 60, technology: 30, business: 5, politics: 5},
-                    {science: 55, technology: 35, business: 5, politics: 5},
-                    /* 更多时间点... */
-                ],
-                1005: [
-                    {business: 50, politics: 30, entertainment: 15, sports: 5},
-                    {business: 45, politics: 35, entertainment: 15, sports: 5},
-                    /* 更多时间点... */
-                ]
-                // 为其他用户添加类似的数据...
-            },
-
-            currentRecommendedNews: [], // 当前显示的推荐新闻
-            systemTime: null, // 存储系统时间
-            newsLoading: false, // 新闻加载状态
-
+            userBrowseHistory: {},
+            userPreferences: {},
+            currentRecommendedNews: [],
+            newsLoading: false,
             preferenceChart: null,
-
-            // 添加以下属性
-            isLargeChartVisible: false, // 改用这个变量名
-            largeChart: null
+            isLargeChartVisible: false,
+            largeChart: null,
+            preferencesLoading: false
         }
     },
     watch: {
+        searchText: function(val) {
+            if (this.searchTimer) {
+                clearTimeout(this.searchTimer);
+            }
+            this.searchTimer = setTimeout(() => {
+                this.handleUserSearch();
+            }, 500); // 500ms 延迟搜索
+        },
         selectedUser(newUser) {
             if (newUser) {
                 this.currentTimeIndex = 0;
@@ -134,18 +91,17 @@ export default {
                 this.fetchRecommendedNews(); // 获取推荐新闻
             }
         },
-        currentTimeIndex() {
-            this.updateUserProfile();
-            this.fetchRecommendedNews(); // 时间点变化时获取推荐新闻
-        },
-        systemTime() {
-            // 系统时间变化时，如果有选中用户则更新推荐
-            if (this.selectedUser) {
+        systemTime(newTime) {
+            if (this.selectedUser && newTime) {
+                this.updateUserProfile();
                 this.fetchRecommendedNews();
             }
         }
     },
     mounted: function () {
+        // 初始加载用户列表
+        this.fetchUserList();
+
         // 初始化图表（空状态）
         this.$nextTick(() => {
             const chartDom = document.getElementById('preference-chart');
@@ -189,9 +145,95 @@ export default {
         });
     },
     methods: {
+        async fetchUserList() {
+            this.userLoading = true;
+            const startTime = performance.now();
+
+            try {
+                const params = {
+                    page: this.userCurrentPage,
+                    pageSize: this.userPageSize
+                };
+
+                // 如果有搜索关键词，添加到请求参数
+                if (this.searchText) {
+                    params.query = this.searchText;
+                }
+
+                const response = await dataService.queryUsersData(params);
+
+                if (response.data.code === 200) {
+                    this.userList = response.data.data.items;
+                    this.userTotal = response.data.data.total;
+                    this.userCurrentPage = response.data.data.page;
+                    this.userPageSize = response.data.data.pageSize;
+                } else {
+                    console.error('获取用户列表失败:', response.data.message);
+                }
+
+                const endTime = performance.now();
+                pipeService.emitQueryLog({
+                    source: 'UserPanel',
+                    action: '获取用户列表',
+                    timestamp: Date.now(),
+                    responseTime: Math.round(endTime - startTime),
+                    resultCount: this.userList.length
+                });
+            } catch (error) {
+                console.error('获取用户列表异常:', error);
+            } finally {
+                this.userLoading = false;
+            }
+        },
+
+        // 处理用户列表分页变化
+        handleUserPageChange(page) {
+            this.userCurrentPage = page;
+            this.fetchUserList();
+        },
+
+        // 处理搜索
+        handleUserSearch() {
+            this.userCurrentPage = 1; // 重置到第一页
+            this.fetchUserList();
+        },
+
+        // 清除搜索
+        handleClearUserSearch() {
+            this.searchText = '';
+            this.userCurrentPage = 1;
+            this.fetchUserList();
+        },
+
+        handleNewsClick(news) {
+            const startTime = performance.now();
+
+            // 确保新闻对象包含必要的字段，并统一分类名称格式
+            const newsData = {
+                newsId: news.newsId,
+                headline: news.headline,
+                category: news.category ? news.category.toLowerCase() : 'unknown'
+            };
+
+            // 发送选中的新闻到 NewsPanel
+            pipeService.emitClickedUsrPanelNews('user-panel-news-selected', newsData);
+
+            const endTime = performance.now();
+
+            // 记录用户点击操作
+            pipeService.emitQueryLog({
+                source: 'UserPanel',
+                action: `用户选择推荐新闻: "${news.headline}"`,
+                timestamp: Date.now(),
+                responseTime: Math.round(endTime - startTime),
+                resultCount: 1
+            });
+        },
+
         handleRowClick(row) {
             const startTime = performance.now();
             this.selectedUser = row;
+            this.loadUserBrowseHistory(row.id); // 新增：加载用户浏览历史
             const endTime = performance.now();
 
             pipeService.emitQueryLog({
@@ -199,17 +241,198 @@ export default {
                 action: `选择用户 ${row.id}`,
                 timestamp: Date.now(),
                 responseTime: Math.round(endTime - startTime),
-                resultCount: 0 // 将在获取数据后更新
+                resultCount: 0
             });
+        },
+
+        async loadUserBrowseHistory(userId) {
+            if (!userId) return;
+
+            this.preferencesLoading = true;
+            try {
+                const startTime = performance.now();
+
+                // 获取用户浏览历史
+                const response = await dataService.getUserBrowseHistory(userId);
+                const browseHistory = response.data.data || [];
+
+                // 保存原始浏览历史
+                this.userBrowseHistory[userId] = browseHistory;
+
+                // 将浏览历史转换为时间点对应的偏好数据
+                this.processUserPreferences(userId, browseHistory);
+
+                const endTime = performance.now();
+                pipeService.emitQueryLog({
+                    source: 'UserPanel',
+                    action: `获取用户浏览历史 (ID:${userId})`,
+                    timestamp: Date.now(),
+                    responseTime: Math.round(endTime - startTime),
+                    resultCount: browseHistory.length
+                });
+
+                // 更新用户资料显示
+                this.updateUserProfile();
+            } catch (error) {
+                console.error('加载用户浏览历史失败:', error);
+                // 清空偏好数据
+                this.userPreferences[userId] = [];
+                for (let i = 0; i < this.timePoints.length; i++) {
+                    this.userPreferences[userId][i] = {};
+                }
+            } finally {
+                this.preferencesLoading = false;
+            }
+        },
+
+        // 新增：处理用户浏览历史，转换为偏好数据
+        processUserPreferences(userId, browseHistory) {
+            // 如果userId对应的偏好数据不存在，初始化
+            if (!this.userPreferences[userId]) {
+                this.userPreferences[userId] = {};
+            }
+
+
+            // 遍历浏览历史，按时间点分组
+            browseHistory.forEach(item => {
+                const timestamp = new Date(item.timestamp).getTime();
+
+                if (!timestamp) return;
+
+                if (!this.userPreferences[userId][timestamp]) {
+                    this.userPreferences[userId][timestamp] = {};
+                }
+                // 找到最接近的时间点索引
+                const timeIndex = this.findClosestTimePointIndex(timestamp);
+                if (timeIndex === -1) return;
+
+                // 获取新闻分类
+                const category = item.category || 'unknown';
+
+                // 在对应时间点累加分类的点击次数
+                if (!this.userPreferences[userId][timeIndex][category]) {
+                    this.userPreferences[userId][timeIndex][category] = 0;
+                }
+                this.userPreferences[userId][timeIndex][category] += 1;
+            });
+        },
+
+        // 新增：找到最接近的时间点索引
+        findClosestTimePointIndex(timestamp) {
+            // 将传入的时间戳转换为Date对象
+            const date = new Date(timestamp);
+            if (isNaN(date.getTime())) return -1;
+
+            // 将所有时间点转换为Date对象
+            const timePointDates = this.timePoints.map(tp => new Date(tp));
+
+            // 找出最近的时间点
+            let closestIndex = 0;
+            let minDiff = Math.abs(date - timePointDates[0]);
+
+            for (let i = 1; i < timePointDates.length; i++) {
+                const diff = Math.abs(date - timePointDates[i]);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    closestIndex = i;
+                }
+            }
+
+            return closestIndex;
         },
 
         // 更新用户资料和推荐
         updateUserProfile() {
-            if (!this.selectedUser) return;
+            if (!this.selectedUser || !this.systemTime) return;
             const userId = this.selectedUser.id;
-            // 更新兴趣饼图
-            this.updatePreferenceChart(userId);
+
+            // 显示加载中状态...
+            if (this.preferencesLoading) {
+                this.showLoadingChart();
+                return;
+            }
+
+            // 查找最接近当前系统时间的偏好数据
+            const currentTimestamp = this.systemTime.getTime();
+            let closestTimestamp = null;
+            let minDiff = Infinity;
+
+            // 找出最接近的时间点
+            if (this.userPreferences[userId]) {
+                for (const timestamp in this.userPreferences[userId]) {
+                    const diff = Math.abs(currentTimestamp - parseInt(timestamp));
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closestTimestamp = timestamp;
+                    }
+                }
+            }
+
+            // 检查是否有偏好数据
+            if (!closestTimestamp || !this.userPreferences[userId][closestTimestamp] ||
+                Object.keys(this.userPreferences[userId][closestTimestamp]).length === 0) {
+                this.showEmptyChart();
+                return;
+            }
+
+            // 使用找到的时间点更新图表
+            this.updatePreferenceChart(userId, closestTimestamp);
         },
+
+        // 新增：显示加载中的图表
+        showLoadingChart() {
+            if (!this.preferenceChart) return;
+
+            this.preferenceChart.setOption({
+                title: {
+                    text: '加载用户兴趣偏好...',
+                    textStyle: {
+                        color: '#999',
+                        fontSize: 14
+                    },
+                    left: 'center',
+                    top: 'middle'
+                },
+                tooltip: {
+                    show: false
+                },
+                series: [{
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    center: ['50%', '50%'],
+                    data: [],
+                    silent: true
+                }]
+            });
+        },
+
+        // 新增：显示空图表
+        showEmptyChart() {
+            if (!this.preferenceChart) return;
+
+            this.preferenceChart.setOption({
+                title: {
+                    text: '无浏览记录数据',
+                    textStyle: {
+                        color: '#999',
+                        fontSize: 14
+                    },
+                    left: 'center',
+                    top: 'middle'
+                },
+                tooltip: {
+                    show: false
+                },
+                series: [{
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    center: ['50%', '50%'],
+                    data: [],
+                    silent: true
+                }]
+            });
+        },
+
 
         // 格式化日期为 'yyyy-MM-dd HH:mm:ss' 格式
         formatDateTime(date) {
@@ -224,24 +447,19 @@ export default {
         },
 
         // 获取推荐新闻
+        // 修改 fetchRecommendedNews 方法，添加 startTime 性能计时
         async fetchRecommendedNews() {
-            if (!this.selectedUser) return;
+            if (!this.selectedUser || !this.systemTime) return;
 
             const userId = this.selectedUser.id;
             this.newsLoading = true;
+            const startTime = performance.now(); // 添加这一行来初始化 startTime
 
             try {
-                const startTime = performance.now();
-                // 使用正确格式的时间戳
-                let timestamp;
-                if (this.systemTime) {
-                    timestamp = this.formatDateTime(this.systemTime);
-                } else {
-                    timestamp = this.timePoints[this.currentTimeIndex];
-                }
-                console.log("timestamp, userId:", timestamp, userId);
-
+                // 使用系统时间的时间戳
+                const timestamp = this.formatDateTime(this.systemTime);
                 const response = await dataService.getUserRecommendations(userId, timestamp);
+
                 this.currentRecommendedNews = response.data.data || [];
 
                 const endTime = performance.now();
@@ -261,24 +479,40 @@ export default {
             }
         },
 
-        // 获取当前推荐新闻 - 修改为直接返回动态获取的数据
+        // 获取当前推荐新闻 - 确保数据格式一致
         getCurrentRecommendedNews() {
-            return this.currentRecommendedNews;
+            // 处理API返回的数据，确保字段名称和格式一致
+            return this.currentRecommendedNews.map(news => {
+                return {
+                    newsId: news.newsId,
+                    headline: news.headline,
+                    category: news.category ? news.category.toLowerCase() : 'unknown'
+                };
+            });
         },
 
         // 更新兴趣饼图
-        updatePreferenceChart(userId) {
+        // 修改updatePreferenceChart方法，添加错误处理
+        updatePreferenceChart(userId, timestamp) {
             if (!this.preferenceChart) return;
             const startTime = performance.now();
             const preferences = this.userPreferences[userId];
-            if (!preferences || !preferences[this.currentTimeIndex]) return;
+            if (!preferences || !preferences[this.currentTimeIndex]) {
+                this.showEmptyChart();
+                return;
+            }
 
             const currentPrefs = preferences[this.currentTimeIndex];
+            // 检查是否有数据
+            if (Object.keys(currentPrefs).length === 0) {
+                this.showEmptyChart();
+                return;
+            }
+
             const seriesData = Object.entries(currentPrefs).map(([name, value]) => {
                 return {
                     name,
                     value,
-                    // 为每个类别设置颜色
                     itemStyle: {
                         color: this.getCategoryColor(name)
                     }
@@ -299,15 +533,15 @@ export default {
                         center: ['50%', '50%'],
                         avoidLabelOverlap: false,
                         label: {
-                            show: false  // 不显示标签文字
+                            show: false
                         },
                         emphasis: {
                             label: {
-                                show: false  // 悬停时也不显示文字
+                                show: false
                             }
                         },
                         labelLine: {
-                            show: false  // 不显示引导线
+                            show: false
                         },
                         data: seriesData,
                         animationType: 'scale',
@@ -320,8 +554,6 @@ export default {
             };
 
             this.preferenceChart.setOption(option, true);
-
-            // 确保图表大小适应容器
             this.preferenceChart.resize();
             const endTime = performance.now();
 
@@ -334,23 +566,45 @@ export default {
             });
         },
 
-        // 获取分类颜色 (从NewsPanel引用)
         getCategoryColor(category) {
+            // 规范化分类名称（转小写）
+            const normalizedCategory = category ? category.toLowerCase() : 'unknown';
+
             const colorMap = {
-                'technology': '#409EFF',
-                'business': '#67C23A',
-                'sports': '#E6A23C',
-                'entertainment': '#F56C6C',
-                'politics': '#909399',
-                'health': '#8E44AD',
-                'science': '#16A085'
+                'adexperience': '#FF5252',  // 红色
+                'autos': '#9C27B0',         // 紫色
+                'entertainment': '#E91E63', // 粉红色
+                'europe': '#3F51B5',        // 靛蓝色
+                'finance': '#00BCD4',       // 青色
+                'foodanddrink': '#FF9800',  // 橙色
+                'health': '#8BC34A',        // 浅绿色
+                'kids': '#FFEB3B',          // 黄色
+                'lifestyle': '#009688',     // 茶绿色
+                'movies': '#673AB7',        // 深紫色
+                'music': '#F44336',         // 红色
+                'news': '#4CAF50',          // 绿色
+                'northamerica': '#2196F3',  // 蓝色
+                'sports': '#03A9F4',        // 浅蓝色
+                'travel': '#FFC107',        // 琥珀色
+                'tv': '#795548',            // 棕色
+                'video': '#607D8B',         // 蓝灰色
+                'weather': '#F44336'        // 红色
             };
-            return colorMap[category] || '#909399';
+
+            return colorMap[normalizedCategory] || '#9E9E9E'; // 默认灰色
         },
 
-        // 显示大图
+        // 修改showLargeChart方法以适应新的数据结构
         showLargeChart() {
-            if (!this.selectedUser) return; // 如果没有选择用户，不显示大图
+            if (!this.selectedUser) return;
+            if (this.preferencesLoading) return; // 数据加载中不显示大图
+
+            const userId = this.selectedUser.id;
+            const preferences = this.userPreferences[userId];
+            if (!preferences || !preferences[this.currentTimeIndex] ||
+                Object.keys(preferences[this.currentTimeIndex]).length === 0) {
+                return; // 无数据不显示大图
+            }
 
             this.isLargeChartVisible = true;
 
@@ -362,11 +616,8 @@ export default {
 
                 if (this.largeChart) {
                     // 获取当前用户和时间点的偏好数据
-                    const userId = this.selectedUser.id;
-                    const preferences = this.userPreferences[userId];
-                    if (!preferences || !preferences[this.currentTimeIndex]) return;
-
                     const currentPrefs = preferences[this.currentTimeIndex];
+
                     const seriesData = Object.entries(currentPrefs).map(([name, value]) => {
                         return {
                             name,

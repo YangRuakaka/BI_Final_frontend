@@ -113,7 +113,7 @@ export default {
     // 搜索用户
     async searchUsers(query) {
         try {
-            const response = await apiClient.get('/users/search', { params: { query } });
+            const response = await apiClient.get('/users', { params: { query } });
             return response;
         } catch (error) {
             console.error('搜索用户失败:', error);
@@ -121,13 +121,12 @@ export default {
         }
     },
 
-    // 导出新闻数据
-    async exportNewsData(params) {
+    async queryUsersData(query) {
         try {
-            const response = await apiClient.post('/news/export', params);
+            const response = await apiClient.get('/users', { params: { query } });
             return response;
         } catch (error) {
-            console.error('导出数据失败:', error);
+            console.error('搜索用户失败:', error);
             throw error;
         }
     },
@@ -168,10 +167,12 @@ export default {
         }
     },
 
-    // 发送智能助手消息
-    async sendAgentMessage(message) {
+    async sendAgentMessage(message, timestamp) {
         try {
-            const response = await apiClient.post('/agent/message', { message });
+            const response = await apiClient.post('/v1/agent/message', {
+                message,
+                timestamp
+            });
             return response;
         } catch (error) {
             console.error('发送智能助手消息失败:', error);
@@ -182,7 +183,7 @@ export default {
     // 统计查询
     async getStatistics(params) {
         try {
-            const response = await apiClient.get('/statistics', { params });
+            const response = await apiClient.get('/news/statistics', { params });
             return response;
         } catch (error) {
             console.error('统计查询失败:', error);

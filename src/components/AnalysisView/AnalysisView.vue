@@ -279,4 +279,31 @@
   font-size: 10px;
   margin-top: -2px;
 }
+
+.statistics-wrapper {
+  padding: 10px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.statistics-card {
+  margin-bottom: 15px;
+}
+
+.total-clicks {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.total-clicks-value {
+  font-size: 36px;
+  font-weight: bold;
+  color: #409EFF;
+}
+
+.total-clicks-label {
+  font-size: 14px;
+  color: #606266;
+  margin-top: 5px;
+}
 </style>

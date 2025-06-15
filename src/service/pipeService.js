@@ -1,28 +1,35 @@
 import Vue from 'vue'
 
 var pipeService = new Vue({
-    data: {
-        TESTEVENT: 'test_event',
-        QUERY_LOG_EVENT: 'query_log_event', // 新增查询日志事件
+    data() {
+        return {
+            QUERY_LOG_EVENT: 'query-log',
+            NEWS_SELECTION_EVENT: 'user-panel-news-selected'
+        }
     },
     methods: {
-        emitTestEvent: function(msg) {
-            this.$emit(this.TESTEVENT, msg)
-        },
-        onTestEvent: function(callback) {
-            this.$on(this.TESTEVENT, function(msg) {
-                callback(msg)
-            })
-        },
-        // 新增日志相关方法
-        emitQueryLog: function(logData) {
+        // 已有的发送查询日志方法
+        emitQueryLog(logData) {
             this.$emit(this.QUERY_LOG_EVENT, logData)
         },
-        onQueryLog: function(callback) {
+
+        // 监听查询日志事件
+        onQueryLog(callback) {
             this.$on(this.QUERY_LOG_EVENT, function(logData) {
                 callback(logData)
             })
+        },
+
+        // 用户从UserPanel选择新闻时发送事件
+        emitClickedUsrPanelNews(eventName, data) {
+            this.$emit(eventName, data)
+        },
+
+        // 监听用户选择新闻事件
+        onClickedUsrPanelNews(eventName, callback) {
+            this.$on(eventName, callback)
         }
     }
-})
+});
+
 export default pipeService

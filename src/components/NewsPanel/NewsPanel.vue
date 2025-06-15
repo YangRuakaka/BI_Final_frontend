@@ -120,4 +120,11 @@
   display: flex;
   flex-direction: column;
 }
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  width: 100%; /* 或任何你想要的宽度 */
+  margin: 10px auto;
+}
 </style>
