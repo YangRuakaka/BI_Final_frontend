@@ -142,10 +142,9 @@ export default {
         }
     },
 
-    // 获取用户浏览历史
-    async getUserBrowseHistory(userId, page = 1, pageSize = 20) {
+    async getUserBrowseHistory(userId, timestamp) {
         try {
-            const params = { page, pageSize };
+            const params = { timestamp };
             const response = await apiClient.get(`/users/${userId}/browse-history`, { params });
             return response;
         } catch (error) {
@@ -187,6 +186,17 @@ export default {
             return response;
         } catch (error) {
             console.error('统计查询失败:', error);
+            throw error;
+        }
+    },
+
+    async getUserInterestTrend(userId, startDate, endDate) {
+        try {
+            const params = { startDate, endDate };
+            const response = await apiClient.get(`/users/${userId}/interest`, { params });
+            return response;
+        } catch (error) {
+            console.error(`获取用户兴趣趋势数据失败 (${userId}):`, error);
             throw error;
         }
     }

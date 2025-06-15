@@ -230,7 +230,7 @@ export default {
             }
         },
 
-        // 获取分类热度历史数据
+// 获取分类热度历史数据
         async fetchCategoryPopularity(category) {
             try {
                 // 如果已经有缓存数据，则不重复获取
@@ -245,8 +245,17 @@ export default {
                 const response = await dataService.getCategoryPopularity(category, startDate, endDate, 'day');
 
                 if (response.data.code === 200) {
-                    // 直接使用API返回的数据
-                    this.categoryClickHistory[category] = response.data.data;
+                    // 确保数据是数组格式
+                    const responseData = response.data.data;
+                    console.log("分类热度历史数据:", responseData);
+
+                    this.categoryClickHistory[category] = Array.isArray(responseData) ? responseData : [];
+                    const keys = Object.keys(responseData);
+                    const firstCategory = keys[0];
+                    // 获取对应的数据数组
+                    const firstCategoryData = responseData[firstCategory];
+                    console.log(`第一个分类是 ${firstCategory}，数据为:`, firstCategoryData);
+                    this.categoryClickHistory[firstCategory] = firstCategoryData;
 
                     // 如果当前正在悬停该分类，则更新悬浮图表
                     if (this.hoveredCategory === category) {
@@ -264,6 +273,8 @@ export default {
                 }
             } catch (error) {
                 console.error(`获取分类 ${category} 热度历史数据异常:`, error);
+                // 初始化为空数组以避免后续错误
+                this.categoryClickHistory[category] = [];
             }
         },
 
@@ -557,12 +568,24 @@ export default {
             const startTime = performance.now();
 
             // 获取分类数据
-            const categoryData = this.categoryClickHistory[category] || [];
+            const categoryData = this.categoryClickHistory[category];
+
+            // 如果数据不存在或不是数组，记录错误并返回
+            if (!categoryData) {
+                console.error(`分类 ${category} 的数据不存在`);
+                return;
+            }
+
+            if (!Array.isArray(categoryData)) {
+                console.error(`分类 ${category} 数据格式错误，应为数组但得到:`, typeof categoryData, categoryData);
+                return;
+            }
 
             // 处理API返回数据
             const data = this.dateRange.map(date => {
-                const record = categoryData.find(item => item.date === date);
-                return record ? record.count : 0;
+                // 安全地查找记录
+                const matchingItem = categoryData.find(item => item && typeof item === 'object' && item.date === date);
+                return matchingItem ? matchingItem.count : 0;
             });
 
             const option = {
@@ -580,7 +603,7 @@ export default {
                     left: '10%',
                     right: '5%',
                     bottom: '15%',
-                    top: '15%',  // 从10%增加到15%，给顶部留更多空间
+                    top: '15%',
                     containLabel: true
                 },
                 xAxis: {
@@ -617,7 +640,6 @@ export default {
                     emphasis: {
                         focus: 'series'
                     },
-                    // 使用区域填充
                     areaStyle: {
                         opacity: 0.3,
                         color: this.getCategoryColor(category)
@@ -626,9 +648,8 @@ export default {
             };
 
             this.hoverChartInstance.setOption(option);
-
-            // 调整大小以适应容器
             this.hoverChartInstance.resize();
+
             const endTime = performance.now();
             pipeService.emitQueryLog({
                 source: 'NewsPanel',

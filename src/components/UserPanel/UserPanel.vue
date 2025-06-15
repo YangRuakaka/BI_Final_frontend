@@ -182,4 +182,22 @@
   text-align: center;
   color: #909399;
 }
+
+/* 在 src/components/UserPanel/UserPanel.vue 的 <style> 部分添加 */
+.selected-user-hint {
+  font-size: 12px;
+  font-weight: normal;
+  margin-left: 10px;
+  color: #606266;
+}
+
+.selected-user-hint .el-tag {
+  margin-left: 5px;
+}
+
+.interest-trend-chart {
+  width: 100%;
+  height: 130px;
+  margin-top: 10px;
+}
 </style>

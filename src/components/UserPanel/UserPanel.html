@@ -9,19 +9,12 @@
             <el-row :gutter="10">
                 <!-- 左侧用户列表 -->
                 <el-col :span="8" class="user-list-container">
-                    <div class="section-header">用户列表</div>
-
-                    <!-- 搜索框 -->
-                    <el-input
-                            v-model="searchText"
-                            placeholder="搜索用户ID..."
-                            prefix-icon="el-icon-search"
-                            clearable
-                            @clear="handleClearUserSearch"
-                            class="user-search">
-                    </el-input>
-
-                    <!-- 用户表格 -->
+                    <div class="section-header">
+                        用户列表
+                        <span v-if="selectedUser" class="selected-user-hint">
+            当前选中: <el-tag size="mini" type="success">{{ selectedUser.id }}</el-tag>
+        </span>
+                    </div>
                     <el-table
                             :data="userList"
                             style="width: 100%"
@@ -39,13 +32,13 @@
                     <!-- 添加分页控件 -->
                     <el-pagination
                             @current-change="handleUserPageChange"
-                            :current-page="userCurrentPage"
+                            :current-page.sync="userCurrentPage"
                             :page-size="userPageSize"
-                            layout="prev, pager, next"
                             :total="userTotal"
+                            layout="prev, pager, next"
                             size="mini"
                             :pager-count="5"
-                            style="text-align: center; margin-top: 5px; transform: scale(0.9);">
+                            style="text-align: center; margin-top: 10px;">
                     </el-pagination>
                 </el-col>
 
@@ -64,22 +57,18 @@
                     </div>
 
                     <!-- 兴趣饼图 -->
-                    <div id="preference-chart" class="preference-chart" v-show="!preferencesLoading"></div>
+                    <div id="preference-chart" class="preference-chart" v-if="!preferencesLoading"></div>
+                    <div v-else class="loading-container">
+                        <i class="el-icon-loading"></i>
+                        <p>加载用户喜好数据...</p>
+                    </div>
 
-                    <!-- 添加用户兴趣数据表格 -->
-                    <div class="preference-table" v-if="selectedUser && currentPreferenceData.length > 0">
-                        <el-table
-                                :data="currentPreferenceData"
-                                size="mini"
-                                style="width: 100%; margin-top: 10px;">
-                            <el-table-column prop="name" label="兴趣分类" width="120"></el-table-column>
-                            <el-table-column prop="value" label="兴趣值"></el-table-column>
-                            <el-table-column prop="percentage" label="占比">
-                                <template slot-scope="scope">
-                                    {{ scope.row.percentage }}%
-                                </template>
-                            </el-table-column>
-                        </el-table>
+                    <div class="interest-trend-chart-container" v-if="selectedUser">
+                        <div v-if="interestTrendLoading" class="loading-container">
+                            <i class="el-icon-loading"></i>
+                            <p>加载兴趣趋势数据...</p>
+                        </div>
+                        <div id="interest-trend-chart" class="interest-trend-chart" v-if="!interestTrendLoading"></div>
                     </div>
                 </el-col>
 
@@ -105,7 +94,8 @@
                                     size="mini">
                                 <el-table-column prop="category" label="分类" width="100">
                                     <template slot-scope="scope">
-                                        <el-tag :color="getCategoryColor(scope.row.category)" size="mini" class="white-text">
+                                        <el-tag :color="getCategoryColor(scope.row.category)" size="mini"
+                                                class="white-text">
                                             {{ scope.row.category }}
                                         </el-tag>
                                     </template>
