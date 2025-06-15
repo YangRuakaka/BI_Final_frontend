@@ -306,6 +306,7 @@ export default {
                 category: '',         // 重置为空字符串
                 titleLengthRange: [10, 50],
                 contentLengthRange: [100, 1000],
+                currentPage: 1,
                 users: []
             };
             console.log('已重置查询条件');

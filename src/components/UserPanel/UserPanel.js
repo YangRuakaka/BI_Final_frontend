@@ -21,6 +21,8 @@ export default {
     },
     data() {
         return {
+            largeTrendChart: null, // 添加大趋势图实例
+
             systemTime: null,
             interestTrendData: {},
             interestTrendLoading: false,
@@ -171,34 +173,44 @@ export default {
 
         initInterestTrendChart() {
             console.log('初始化或重置折线图');
-            const trendChartDom = document.getElementById('interest-trend-chart');
-            if (trendChartDom) {
-                // 如果已经存在，先销毁
-                if (this.interestTrendChart) {
-                    this.interestTrendChart.dispose();
-                }
-
-                // 重新初始化
-                this.interestTrendChart = echarts.init(trendChartDom);
-                this.interestTrendChart.setOption({
-                    title: {
-                        text: '加载兴趣趋势数据...',
-                        textStyle: {
-                            color: '#999',
-                            fontSize: 12
-                        },
-                        left: 'center',
-                        top: 'middle'
+            this.$nextTick(() => {
+                const trendChartDom = document.getElementById('interest-trend-chart');
+                if (trendChartDom) {
+                    // 如果已经存在，先销毁
+                    if (this.interestTrendChart) {
+                        this.interestTrendChart.dispose();
                     }
-                });
 
-                // 添加窗口大小变化监听
-                window.addEventListener('resize', () => {
-                    this.interestTrendChart && this.interestTrendChart.resize();
-                });
-            } else {
-                console.error('找不到折线图DOM元素');
-            }
+                    // 重新初始化
+                    this.interestTrendChart = echarts.init(trendChartDom);
+                    this.interestTrendChart.setOption({
+                        title: {
+                            text: '加载兴趣趋势数据...',
+                            textStyle: {
+                                color: '#999',
+                                fontSize: 12
+                            },
+                            left: 'center',
+                            top: 'middle'
+                        }
+                    });
+
+                    // 添加窗口大小变化监听
+                    window.addEventListener('resize', () => {
+                        this.interestTrendChart && this.interestTrendChart.resize();
+                    });
+                } else {
+                    console.error('找不到折线图DOM元素');
+
+                    // 如果没有趋势图容器，考虑显示在大图上
+                    if (this.selectedUser && this.isLargeChartVisible) {
+                        this.updateLargeTrendChart();
+                    } else {
+                        // 确保下次选择用户时会重新尝试
+                        this.interestTrendChart = null;
+                    }
+                }
+            });
         },
         // 更新兴趣趋势图
         updateInterestTrendChart() {
@@ -388,14 +400,26 @@ export default {
                 // 保存兴趣趋势数据
                 this.interestTrendData = trendData;
 
-                // 确保图表存在后再更新
-                if (!this.interestTrendChart) {
-                    this.initInterestTrendChart();
+                // 不再立即尝试更新小趋势图，而是准备好大图表数据
+                if (this.isLargeChartVisible && this.largeTrendChart) {
+                    this.updateLargeTrendChart();
                 }
 
-                // 延迟一帧更新图表，确保DOM已更新
+                // 确保 DOM 更新后再初始化图表
                 this.$nextTick(() => {
-                    this.updateInterestTrendChart();
+                    // 确保图表存在后再更新
+                    if (!this.interestTrendChart) {
+                        this.initInterestTrendChart();
+
+                        // 延迟一小段时间确保图表初始化完成
+                        setTimeout(() => {
+                            if (this.interestTrendChart) {
+                                this.updateInterestTrendChart();
+                            }
+                        }, 100);
+                    } else {
+                        this.updateInterestTrendChart();
+                    }
                 });
 
             } catch (error) {
@@ -404,8 +428,16 @@ export default {
                 this.$nextTick(() => {
                     if (!this.interestTrendChart) {
                         this.initInterestTrendChart();
+
+                        // 同样延迟显示错误信息
+                        setTimeout(() => {
+                            if (this.interestTrendChart) {
+                                this.showTrendChartError('获取数据失败: ' + (error.message || '未知错误'));
+                            }
+                        }, 100);
+                    } else {
+                        this.showTrendChartError('获取数据失败: ' + (error.message || '未知错误'));
                     }
-                    this.showTrendChartError('获取数据失败: ' + (error.message || '未知错误'));
                 });
             } finally {
                 this.interestTrendLoading = false;
@@ -545,7 +577,14 @@ export default {
             }
 
             // 先显示加载状态
-            this.preferenceChart && this.showLoadingChart();
+            if (this.preferenceChart) {
+                this.showLoadingChart();
+            } else {
+                this.initPreferenceChart();
+                if (this.preferenceChart) {
+                    this.showLoadingChart();
+                }
+            }
 
             // 设置新的选中用户
             this.selectedUser = row;
@@ -555,16 +594,11 @@ export default {
             this.userPreferences = {}; // 清空之前的偏好数据
             this.lastRecommendationTime = null; // 重置上次推荐时间，确保选择新用户后立即获取推荐
 
-            // 初始化折线图（在选择用户后）
-            this.$nextTick(() => {
-                this.initInterestTrendChart();
+            // 加载用户数据
+            this.loadUserBrowseHistory(row.id);
 
-                // 加载新用户数据
-                this.loadUserBrowseHistory(row.id);
-
-                // 获取用户兴趣趋势数据
-                this.fetchUserInterestTrend(row.id);
-            });
+            // 获取用户兴趣趋势数据
+            this.fetchUserInterestTrend(row.id);
 
             const endTime = performance.now();
 
@@ -583,6 +617,7 @@ export default {
             this.handleUserSearch(true);
         },
 
+        // 修改 loadUserBrowseHistory 方法，确保加载完成后更新图表
         async loadUserBrowseHistory(userId) {
             if (!userId || !this.systemTime) return;
 
@@ -612,20 +647,20 @@ export default {
                     resultCount: browseHistory.length
                 });
 
-                // 更新用户资料显示
-                this.updateUserProfile();
             } catch (error) {
                 console.error('加载用户浏览历史失败:', error);
                 // 清空偏好数据
                 if (!this.userPreferences[userId]) {
                     this.userPreferences[userId] = {};
                 }
-                this.userPreferences[userId][this.currentTimeIndex] = {};
+                this.userPreferences[userId] = {};
 
                 // 显示无数据状态
                 this.showEmptyChart("暂无数据");
             } finally {
                 this.preferencesLoading = false;
+                // 确保加载完成后更新用户资料显示
+                this.updateUserProfile();
             }
         },
 
@@ -653,25 +688,28 @@ export default {
             });
         },
 
-        // 修改 updateUserProfile 方法，优化数据检查逻辑
+        // 修改 updateUserProfile 方法，确保加载完成后正确更新图表
         updateUserProfile() {
             if (!this.selectedUser || !this.systemTime) return;
             const userId = this.selectedUser.id;
 
-            // 显示加载中状态
-            if (this.preferencesLoading) {
-                this.showLoadingChart();
-                return;
-            }
-
             // 检查是否有偏好数据
             if (!this.userPreferences[userId] ||
                 Object.keys(this.userPreferences[userId]).length === 0) {
+                // 确保图表存在
+                if (!this.preferenceChart) {
+                    this.initPreferenceChart();
+                }
                 this.showEmptyChart("暂无喜好数据");
                 return;
             }
 
-            // 更新图表（不再传递时间点索引）
+            // 确保图表实例存在
+            if (!this.preferenceChart) {
+                this.initPreferenceChart();
+            }
+
+            // 更新图表
             this.updatePreferenceChart(userId);
         },
 
@@ -790,10 +828,14 @@ export default {
 
         // 修改更新饼图的方法
         updatePreferenceChart(userId) {
-            if (!this.preferenceChart) return;
-            const startTime = performance.now();
+            if (!this.preferenceChart) {
+                this.initPreferenceChart();
+                if (!this.preferenceChart) return;
+            }
 
+            const startTime = performance.now();
             const preferences = this.userPreferences[userId];
+
             if (!preferences) {
                 this.showEmptyChart();
                 return;
@@ -865,6 +907,10 @@ export default {
             this.preferenceChart.setOption(option, true);
             this.preferenceChart.resize();
 
+            // 重新绑定点击事件
+            this.preferenceChart.off('click');
+            this.preferenceChart.on('click', this.showLargeChart);
+
             const endTime = performance.now();
             pipeService.emitQueryLog({
                 source: 'UserPanel',
@@ -904,130 +950,313 @@ export default {
         },
 
         // 同样修改大图表显示逻辑
+        // 修改 showLargeChart 方法
         showLargeChart() {
             if (!this.selectedUser) return;
-            if (this.preferencesLoading) return; // 数据加载中不显示大图
+            if (this.preferencesLoading) return;
 
             const userId = this.selectedUser.id;
             const preferences = this.userPreferences[userId];
             if (!preferences || Object.keys(preferences).length === 0) {
-                return; // 无数据不显示大图
+                return;
             }
 
             this.isLargeChartVisible = true;
 
             this.$nextTick(() => {
-                const largeDom = document.getElementById('large-preference-chart');
-                if (!this.largeChart && largeDom) {
-                    this.largeChart = echarts.init(largeDom);
+                // 初始化大饼图
+                this.initLargePieChart(userId, preferences);
+
+                // 初始化大趋势图
+                this.initLargeTrendChart();
+
+                // 如果已有趋势数据，直接更新
+                if (this.interestTrendData && Array.isArray(this.interestTrendData) && this.interestTrendData.length > 0) {
+                    this.updateLargeTrendChart();
+                } else {
+                    // 如果没有趋势数据，尝试获取
+                    this.fetchUserInterestTrend(userId);
                 }
+            });
+        },
 
-                if (this.largeChart) {
-                    // 获取当前用户的偏好数据
-                    const currentPrefs = preferences;
+        initLargePieChart(userId, preferences) {
+            const largeDom = document.getElementById('large-preference-chart');
+            if (!largeDom) return;
 
-                    // 计算总分
-                    const totalScore = Object.values(currentPrefs).reduce((sum, score) => sum + score, 0);
+            // 如果已存在，先销毁
+            if (this.largeChart) {
+                this.largeChart.dispose();
+            }
 
-                    const seriesData = Object.entries(currentPrefs).map(([name, score]) => {
-                        const percentage = totalScore > 0 ? ((score / totalScore) * 100).toFixed(1) : 0;
-                        return {
-                            name,
-                            value: score,
-                            percentage: percentage,
-                            itemStyle: {
-                                color: this.getCategoryColor(name)
-                            }
-                        };
-                    }).sort((a, b) => b.value - a.value); // 按分数从高到低排序
+            this.largeChart = echarts.init(largeDom);
 
-                    // 为大图创建新的配置
-                    const largeOption = {
-                        title: {
-                            text: '用户兴趣偏好分析',
-                            left: 'center',
-                            top: 10,
-                            textStyle: {
-                                fontSize: 18
-                            }
-                        },
-                        tooltip: {
-                            trigger: 'item',
+            // 计算总分
+            const totalScore = Object.values(preferences).reduce((sum, score) => sum + score, 0);
+
+            const seriesData = Object.entries(preferences).map(([name, score]) => {
+                const percentage = totalScore > 0 ? ((score / totalScore) * 100).toFixed(1) : 0;
+                return {
+                    name,
+                    value: score,
+                    percentage: percentage,
+                    itemStyle: {
+                        color: this.getCategoryColor(name)
+                    }
+                };
+            }).sort((a, b) => b.value - a.value); // 按分数从高到低排序
+
+            // 为大图创建新的配置
+            const largeOption = {
+                title: {
+                    text: '用户兴趣偏好分布',
+                    left: 'center',
+                    top: 10,
+                    textStyle: {
+                        fontSize: 16
+                    }
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: function(params) {
+                        return `${params.name}<br>分数: ${params.value.toFixed(1)}<br>占比: ${params.data.percentage}%`;
+                    }
+                },
+                series: [
+                    {
+                        name: '兴趣占比',
+                        type: 'pie',
+                        radius: ['20%', '60%'],
+                        center: ['50%', '55%'],
+                        avoidLabelOverlap: true,
+                        label: {
+                            show: true,
                             formatter: function(params) {
-                                return `${params.name}<br>分数: ${params.value.toFixed(1)}<br>占比: ${params.data.percentage}%`;
+                                return `${params.name}\n${params.data.percentage}%`;
+                            },
+                            fontSize: 12
+                        },
+                        emphasis: {
+                            label: {
+                                show: true,
+                                fontSize: 14,
+                                fontWeight: 'bold'
                             }
                         },
-                        series: [
-                            {
-                                name: '兴趣占比',
-                                type: 'pie',
-                                radius: ['20%', '60%'],
-                                center: ['50%', '55%'],
-                                avoidLabelOverlap: true,
-                                label: {
-                                    show: true,
-                                    formatter: function(params) {
-                                        return `${params.name}\n${params.value.toFixed(1)}分\n${params.data.percentage}%`;
-                                    },
-                                    fontSize: 14,
-                                    fontWeight: 'bold'
-                                },
-                                emphasis: {
-                                    label: {
-                                        show: true,
-                                        fontSize: 16,
-                                        fontWeight: 'bold'
-                                    }
-                                },
-                                labelLine: {
-                                    show: true,
-                                    smooth: true,
-                                    length: 15,
-                                    length2: 20
-                                },
-                                data: seriesData,
-                                animationType: 'scale',
-                                animationEasing: 'elasticOut',
-                                animationDelay: function (idx) {
-                                    return Math.random() * 200;
+                        labelLine: {
+                            show: true,
+                            smooth: true,
+                            length: 10,
+                            length2: 15
+                        },
+                        data: seriesData,
+                        animationType: 'scale',
+                        animationEasing: 'elasticOut'
+                    }
+                ]
+            };
+
+            this.largeChart.setOption(largeOption);
+            this.largeChart.resize();
+        },
+
+// 新增方法：初始化大趋势图
+        initLargeTrendChart() {
+            const trendChartDom = document.getElementById('large-trend-chart');
+            if (!trendChartDom) return;
+
+            // 如果已存在，先销毁
+            if (this.largeTrendChart) {
+                this.largeTrendChart.dispose();
+            }
+
+            this.largeTrendChart = echarts.init(trendChartDom);
+
+            // 显示加载中状态
+            this.largeTrendChart.setOption({
+                title: {
+                    text: '加载兴趣趋势数据...',
+                    textStyle: {
+                        color: '#999',
+                        fontSize: 14
+                    },
+                    left: 'center',
+                    top: 'middle'
+                }
+            });
+
+            // 尝试更新趋势图
+            this.updateLargeTrendChart();
+        },
+
+// 新增方法：更新大趋势图
+        updateLargeTrendChart() {
+            if (!this.largeTrendChart || !this.interestTrendData || !Array.isArray(this.interestTrendData)) {
+                return;
+            }
+
+            try {
+                // 数据处理逻辑与原 updateInterestTrendChart 相同
+                // 首先对数据按日期排序（升序）
+                const sortedData = [...this.interestTrendData].sort((a, b) => {
+                    const dateA = parseInt(String(a.date));
+                    const dateB = parseInt(String(b.date));
+                    return dateA - dateB;
+                });
+
+                // 获取所有日期和分类
+                const dates = sortedData.map(item => {
+                    const dateStr = String(item.date);
+                    return `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
+                });
+
+                // 获取所有不同的分类
+                const allCategories = new Set();
+                sortedData.forEach(item => {
+                    if (item.interests && Array.isArray(item.interests)) {
+                        item.interests.forEach(interest => {
+                            if (interest && interest.category) {
+                                allCategories.add(interest.category);
+                            }
+                        });
+                    }
+                });
+
+                // 为每个分类准备数据系列
+                const series = [];
+                allCategories.forEach(category => {
+                    const data = [];
+
+                    // 为每个日期找到对应分类的得分
+                    dates.forEach((date, dateIndex) => {
+                        const dateItem = sortedData[dateIndex];
+                        let score = 0;
+
+                        if (dateItem && dateItem.interests && Array.isArray(dateItem.interests)) {
+                            const interest = dateItem.interests.find(i => i && i.category === category);
+                            if (interest) {
+                                score = parseFloat(interest.score);
+                                if (isNaN(score)) {
+                                    score = 0;
                                 }
                             }
-                        ]
-                    };
+                        }
 
-                    this.largeChart.setOption(largeOption);
-                    this.largeChart.resize();
-                }
+                        data.push(score);
+                    });
 
-                // 初始化兴趣趋势图
-                const trendChartDom = document.getElementById('interest-trend-chart');
-                if (trendChartDom) {
-                    this.interestTrendChart = echarts.init(trendChartDom);
+                    series.push({
+                        name: category,
+                        type: 'line',
+                        data: data,
+                        smooth: true,
+                        symbol: 'circle',
+                        symbolSize: 6,
+                        lineStyle: {
+                            width: 2,
+                            color: this.getCategoryColor(category)
+                        },
+                        itemStyle: {
+                            color: this.getCategoryColor(category)
+                        }
+                    });
+                });
 
-                    // 显示空状态提示
-                    this.interestTrendChart.setOption({
+                // 设置大趋势图配置
+                const option = {
+                    title: {
+                        text: '用户兴趣趋势变化',
+                        left: 'center',
+                        top: 10,
+                        textStyle: {
+                            fontSize: 16
+                        }
+                    },
+                    tooltip: {
+                        trigger: 'axis',
+                        formatter: function(params) {
+                            let result = params[0].axisValue + '<br/>';
+                            params.forEach(param => {
+                                result += `${param.marker} ${param.seriesName}: ${param.value}<br/>`;
+                            });
+                            return result;
+                        }
+                    },
+                    legend: {
+                        data: [...allCategories],
+                        right: 10,
+                        top: 30,
+                        textStyle: {
+                            fontSize: 10
+                        },
+                        itemWidth: 10,
+                        itemHeight: 10,
+                        type: 'scroll'
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '5%',
+                        top: '70px',
+                        containLabel: true
+                    },
+                    xAxis: {
+                        type: 'category',
+                        boundaryGap: false,
+                        data: dates,
+                        axisLabel: {
+                            formatter: value => value.substring(5), // 只显示月-日
+                            fontSize: 10
+                        }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        name: '兴趣得分',
+                        nameTextStyle: {
+                            fontSize: 10
+                        },
+                        axisLabel: {
+                            fontSize: 10
+                        }
+                    },
+                    series: series
+                };
+
+                this.largeTrendChart.setOption(option, true);
+                this.largeTrendChart.resize();
+            } catch (error) {
+                console.error('更新大趋势图时发生错误:', error);
+                if (this.largeTrendChart) {
+                    this.largeTrendChart.setOption({
                         title: {
-                            text: '请选择用户查看兴趣趋势',
+                            text: '趋势图渲染失败: ' + error.message,
                             textStyle: {
                                 color: '#999',
-                                fontSize: 12
+                                fontSize: 14
                             },
                             left: 'center',
                             top: 'middle'
                         }
                     });
-
-                    // 监听窗口大小变化
-                    window.addEventListener('resize', () => {
-                        this.interestTrendChart && this.interestTrendChart.resize();
-                    });
                 }
-            });
+            }
         },
 
-        // 隐藏大图
+
+        // 修改隐藏大图方法，同时处理大趋势图
         hideLargeChart() {
             this.isLargeChartVisible = false;
-        }
+
+            // 可选：释放图表资源
+            if (this.largeChart) {
+                this.largeChart.dispose();
+                this.largeChart = null;
+            }
+
+            if (this.largeTrendChart) {
+                this.largeTrendChart.dispose();
+                this.largeTrendChart = null;
+            }
+        },
     }
 }

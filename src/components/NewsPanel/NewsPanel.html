@@ -8,7 +8,7 @@
         <div class="viewbody">
             <el-row :gutter="10">
                 <!-- 左侧新闻表格 -->
-                <el-col :span="12" class="news-table-container">
+                <el-col :span="12">
                     <el-row :gutter="10" class="filter-row">
                         <el-col :span="6">
                             <el-input
@@ -41,8 +41,8 @@
                     </el-row>
                     <el-table
                             :data="filteredNewsList"
-                            style="width: 100%; flex: 1;"
-                            :height="null"
+                            style="width: 100%;"
+                            max-height="190px"
                             @row-click="handleRowClick"
                             highlight-current-row
                             v-loading="loading">
@@ -73,8 +73,11 @@
                             :page-size="pageSize"
                             :total="total"
                             layout="prev, pager, next"
-                            small
-                            class="pagination">
+                            size="mini"
+                            :pager-count="5"
+                            :small="true"
+                            :hide-on-single-page="false"
+                            style="text-align: center; padding: 5px 0;">
                     </el-pagination>
                 </el-col>
                 <!-- 右侧热度图表区域 -->

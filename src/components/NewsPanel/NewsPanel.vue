@@ -22,11 +22,6 @@
   padding: 10px;
 }
 
-.news-table-container {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
 
 .news-chart-container {
   padding: 10px;

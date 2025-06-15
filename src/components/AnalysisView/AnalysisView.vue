@@ -286,17 +286,8 @@
   overflow-y: auto;
 }
 
-.statistics-card {
-  margin-bottom: 15px;
-}
-
-.total-clicks {
-  text-align: center;
-  padding: 20px 0;
-}
-
 .total-clicks-value {
-  font-size: 36px;
+  font-size: 18px;
   font-weight: bold;
   color: #409EFF;
 }
@@ -328,21 +319,46 @@
   flex-direction: column;
 }
 
-.full-height-row {
-  flex: 1;
-  display: flex;
-  align-items: stretch;
-}
 
-.total-clicks {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 20px 0;
-}
 
 .el-col {
   height: 100%;
+}
+
+
+
+#analysisview .el-table th {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* 减小标签页的整体高度 */
+#analysisview .el-tabs__header {
+  margin-bottom: 5px !important;
+  height: 30px !important;
+}
+
+/* 减小标签页的标题项高度 */
+#analysisview .el-tabs__item {
+  height: 28px !important;
+  line-height: 28px !important;
+  font-size: 12px !important;
+  padding: 0 10px !important;
+}
+
+/* 调整标签内容区域的上边距 */
+#analysisview .el-tabs__content {
+  padding-top: 2px !important;
+}
+
+/* 调整标签底部线条位置 */
+#analysisview .el-tabs__active-bar {
+  height: 2px !important;
+  bottom: 0 !important;
+}
+
+/* 调整标签导航底部线条 */
+#analysisview .el-tabs__nav-wrap::after {
+  height: 1px !important;
 }
 </style>

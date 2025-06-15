@@ -11,8 +11,8 @@
 }
 
 .viewbody {
-  flex: 1;
-  overflow: hidden;
+  flex: 0 0 600px; /* 使用固定高度替代flex: 1 */
+  overflow-y: auto;
   display: flex;
   padding: 10px;
 }
@@ -41,7 +41,7 @@
 .recommendation-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 400px;
 }
 
 .preference-chart {
@@ -137,13 +137,40 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 700px;  /* 从500px增加到700px */
-  height: 500px; /* 从400px增加到500px */
+  width: 800px;
+  height: 600px;
   background-color: white;
   border-radius: 8px;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
   z-index: 10000;
   padding: 20px;
+}
+
+.charts-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.modal-title {
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 18px;
+  color: #333;
+}
+
+.large-chart {
+  flex: 1;
+  width: 100%;
+  min-height: 250px;
+}
+
+.interest-trend-chart-container {
+  /* 删除 display: none 或者改为 */
+  display: block;
+  margin-top: 10px;
+  height: 150px;
 }
 
 #large-preference-chart {
@@ -161,10 +188,6 @@
   font-size: 12px;
   max-height: 130px;
   overflow-y: auto;
-}
-
-.preference-table .el-table {
-  max-height: 130px;
 }
 
 /* 调整推荐新闻表格样式 */
@@ -199,15 +222,37 @@
   margin-left: 5px;
 }
 
-.interest-trend-chart-container {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  margin-top: 10px;
-}
-
 .interest-trend-chart {
   width: 100%;
   height: 150px;
 }
+
+.modal-title {
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 18px;
+  color: #333;
+}
+
+.large-chart {
+  flex: 1;
+  width: 100%;
+  min-height: 250px;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.8);
+  z-index: 10;
+}
+
 </style>

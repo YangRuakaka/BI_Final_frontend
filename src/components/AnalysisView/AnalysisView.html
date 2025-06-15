@@ -6,198 +6,195 @@
     </el-row>
     <el-row class="content-row">
         <el-col :span="16" class="chart-container">
-            <div class="analysis-content">
-                <el-form :model="queryForm" ref="queryForm" label-width="80px" size="mini" class="compact-form">
-                    <el-row :gutter="10">
-                        <el-col :span="8">
-                            <el-form-item label="时间">
-                                <el-date-picker
-                                        v-model="queryForm.dateRange"
-                                        type="daterange"
-                                        range-separator="-"
-                                        start-placeholder="开始"
-                                        end-placeholder="结束"
-                                        value-format="yyyy-MM-dd"
+            <el-form :model="queryForm" ref="queryForm" label-width="80px" size="mini" class="compact-form">
+                <el-row :gutter="10">
+                    <el-col :span="8">
+                        <el-form-item label="时间">
+                            <el-date-picker
+                                    v-model="queryForm.dateRange"
+                                    type="daterange"
+                                    range-separator="-"
+                                    start-placeholder="开始"
+                                    end-placeholder="结束"
+                                    value-format="yyyy-MM-dd"
+                                    size="mini"
+                                    style="width: 100%;">
+                            </el-date-picker>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                        <el-form-item label="新闻主题">
+                            <el-input
+                                    v-model="queryForm.topic"
+                                    placeholder="输入主题"
+                                    prefix-icon="el-icon-collection-tag"
+                                    clearable
+                                    @keyup.enter="handleTopicEnter"
+                                    @clear="handleClearTopic">
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                        <el-form-item label="分类">
+                            <el-input
+                                    v-model="queryForm.category"
+                                    placeholder="输入分类"
+                                    prefix-icon="el-icon-menu"
+                                    clearable
+                                    @keyup.enter="handleCategoryEnter"
+                                    @clear="handleClearCategory">
+                            </el-input>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+
+                <el-row :gutter="10">
+                    <el-col :span="8">
+                        <el-form-item label="用户">
+                            <div style="display: flex;">
+                                <el-input
+                                        v-model="userIdInput"
+                                        placeholder="输入用户ID"
+                                        prefix-icon="el-icon-user"
+                                        clearable
+                                        @clear="handleClearUserIdInput"
                                         size="mini"
-                                        style="width: 100%;">
-                                </el-date-picker>
-                            </el-form-item>
-                        </el-col>
-                        <el-col :span="8">
-                            <el-form-item label="新闻主题">
-                                <el-input
-                                        v-model="queryForm.topic"
-                                        placeholder="输入主题"
-                                        prefix-icon="el-icon-collection-tag"
-                                        clearable
-                                        @keyup.enter="handleTopicEnter"
-                                        @clear="handleClearTopic">
+                                        style="flex: 1;">
                                 </el-input>
-                            </el-form-item>
-                        </el-col>
-                        <el-col :span="8">
-                            <el-form-item label="分类">
-                                <el-input
-                                        v-model="queryForm.category"
-                                        placeholder="输入分类"
-                                        prefix-icon="el-icon-menu"
-                                        clearable
-                                        @keyup.enter="handleCategoryEnter"
-                                        @clear="handleClearCategory">
-                                </el-input>
-                            </el-form-item>
-                        </el-col>
-                    </el-row>
+                                <el-button
+                                        type="primary"
+                                        size="mini"
+                                        icon="el-icon-plus"
+                                        @click="handleUserIdEnter"
+                                        style="margin-left: 3px; padding: 5px 7px; font-size: 12px;">
+                                </el-button>
+                            </div>
+                            <div class="selected-tags" v-if="queryForm.users && queryForm.users.length > 0">
+                                <el-tag
+                                        v-for="userId in queryForm.users"
+                                        :key="userId"
+                                        size="mini"
+                                        closable
+                                        @close="removeSelectedUser(userId)">
+                                    {{ userId }}
+                                </el-tag>
+                            </div>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                        <el-form-item label="标题长度" class="compact-slider">
+                            <el-slider
+                                    v-model="queryForm.titleLengthRange"
+                                    range
+                                    :min="0"
+                                    :max="250"
+                                    :marks="{0:'0', 250:'250'}">
+                            </el-slider>
+                        </el-form-item>
+                    </el-col>
+                    <el-col :span="8">
+                        <el-form-item label="内容长度" class="compact-slider">
+                            <el-slider
+                                    v-model="queryForm.contentLengthRange"
+                                    range
+                                    :min="0"
+                                    :max="250000"
+                                    :marks="{0:'0', 250000:'25w'}">
+                            </el-slider>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
 
-                    <el-row :gutter="10">
-                        <el-col :span="8">
-                            <el-form-item label="用户">
-                                <div style="display: flex;">
-                                    <el-input
-                                            v-model="userIdInput"
-                                            placeholder="输入用户ID"
-                                            prefix-icon="el-icon-user"
-                                            clearable
-                                            @clear="handleClearUserIdInput"
-                                            size="mini"
-                                            style="flex: 1;">
-                                    </el-input>
-                                    <el-button
-                                            type="primary"
-                                            size="mini"
-                                            icon="el-icon-plus"
-                                            @click="handleUserIdEnter"
-                                            style="margin-left: 3px; padding: 5px 7px; font-size: 12px;">
-                                    </el-button>
-                                </div>
-                                <div class="selected-tags" v-if="queryForm.users && queryForm.users.length > 0">
-                                    <el-tag
-                                            v-for="userId in queryForm.users"
-                                            :key="userId"
-                                            size="mini"
-                                            closable
-                                            @close="removeSelectedUser(userId)">
-                                        {{ userId }}
-                                    </el-tag>
-                                </div>
-                            </el-form-item>
-                        </el-col>
-                        <el-col :span="8">
-                            <el-form-item label="标题长度" class="compact-slider">
-                                <el-slider
-                                        v-model="queryForm.titleLengthRange"
-                                        range
-                                        :min="0"
-                                        :max="250"
-                                        :marks="{0:'0', 250:'250'}">
-                                </el-slider>
-                            </el-form-item>
-                        </el-col>
-                        <el-col :span="8">
-                            <el-form-item label="内容长度" class="compact-slider">
-                                <el-slider
-                                        v-model="queryForm.contentLengthRange"
-                                        range
-                                        :min="0"
-                                        :max="250000"
-                                        :marks="{0:'0', 250000:'25w'}">
-                                </el-slider>
-                            </el-form-item>
-                        </el-col>
-                    </el-row>
+                <el-form-item class="action-buttons">
+                    <el-button type="primary" size="mini" @click="executeQuery" :loading="queryLoading">查询
+                    </el-button>
+                    <el-button size="mini" @click="resetQuery">重置</el-button>
+                </el-form-item>
+            </el-form>
 
-                    <el-form-item class="action-buttons">
-                        <el-button type="primary" size="mini" @click="executeQuery" :loading="queryLoading">查询
-                        </el-button>
-                        <el-button size="mini" @click="resetQuery">重置</el-button>
-                    </el-form-item>
-                </el-form>
-
-                <div class="result-container expanded">
-                    <div v-if="queryLoading" class="loading-container">
-                        <i class="el-icon-loading"></i>
-                        <p>查询数据中，请稍候...</p>
-                    </div>
-                    <div v-else-if="!hasResults" class="no-data">
-                        <i class="el-icon-search"></i>
-                        <p>请设置查询条件并点击查询按钮</p>
-                    </div>
-                    <div v-else class="result-content">
-                        <el-tabs v-model="activeTab" @tab-click="handleTabClick" size="small">
-                            <el-tab-pane label="表格数据" name="table">
-                                <!-- 修改后 -->
-                                <div class="pagination-container" style="margin-top: 10px; text-align: right; background-color: #fff; padding: 10px 0;">
-                                    <el-pagination
-                                            @size-change="handleSizeChange"
-                                            @current-change="handleCurrentChange"
-                                            :current-page="currentPage"
-                                            :page-sizes="[10, 20, 50, 100]"
-                                            :page-size="pageSize"
-                                            size="small"
-                                            layout="total, sizes, prev, pager, next, jumper"
-                                            :total="total">
-                                    </el-pagination>
-                                </div>
-                                <el-table :data="tableData" height="100%" border style="width: 100%">
-                                    <el-table-column prop="newsId" label="ID" width="80"></el-table-column>
-                                    <el-table-column prop="headline" label="标题"
-                                                     show-overflow-tooltip></el-table-column>
-                                    <el-table-column prop="topic" label="主题" width="100"></el-table-column>
-                                    <el-table-column prop="category" label="分类" width="100"></el-table-column>
-                                    <el-table-column prop="publishDate" label="发布日期" width="100"></el-table-column>
-                                    <el-table-column width="60">
-                                        <template slot-scope="scope">
-                                            <el-button type="text" size="mini" @click="viewNewsDetail(scope.row)">详情
-                                            </el-button>
-                                        </template>
-                                    </el-table-column>
-                                </el-table>
-
-                            </el-tab-pane>
-                            <el-tab-pane label="统计信息" name="statistics">
-                                <div class="statistics-wrapper" v-loading="statisticsLoading">
-                                    <el-row :gutter="24" v-if="statisticsData">
-                                        <el-col :span="24">
-                                            <el-card shadow="hover" class="statistics-card full-height-card">
-                                                <div slot="header" class="clearfix">
-                                                    <span>总体统计</span>
-                                                </div>
-                                                <el-row :gutter="20" class="full-height-row">
-                                                    <el-col :span="8">
-                                                        <div class="total-clicks">
-                                                            <div class="total-clicks-value">
-                                                                {{ statisticsData.totalClicks }}
-                                                            </div>
-                                                            <div class="total-clicks-label">总点击量</div>
+            <div class="result-container expanded">
+                <div v-if="queryLoading" class="loading-container">
+                    <i class="el-icon-loading"></i>
+                    <p>查询数据中，请稍候...</p>
+                </div>
+                <div v-else-if="!hasResults" class="no-data">
+                    <i class="el-icon-search"></i>
+                    <p>请设置查询条件并点击查询按钮</p>
+                </div>
+                <div v-else class="result-content">
+                    <el-tabs v-model="activeTab" @tab-click="handleTabClick" size="mini">
+                        <el-tab-pane label="表格数据" name="table">
+                            <el-pagination
+                                    @size-change="handleSizeChange"
+                                    @current-change="handleCurrentChange"
+                                    :current-page="currentPage"
+                                    size="mini"
+                                    layout="prev, pager, next"
+                                    :total="total"
+                                    style="margin-top: -10px; transform: scale(0.9); transform-origin: left center; height: 22px; line-height: 22px;">
+                            </el-pagination>
+                            <el-table
+                                    :data="tableData"
+                                    border
+                                    size="mini"
+                                    style="width: 100%; font-size: 11px;"
+                                    height="calc(200px - 35px)"
+                                    :header-cell-style="{padding: '2px 0', height: '24px'}"
+                                    :cell-style="{padding: '1px 0', height: '20px'}">
+                                <el-table-column prop="newsId" label="ID" width="80"></el-table-column>
+                                <el-table-column prop="headline" label="标题"
+                                                 show-overflow-tooltip></el-table-column>
+                                <el-table-column prop="topic" label="主题" width="100"></el-table-column>
+                                <el-table-column prop="category" label="分类" width="100"></el-table-column>
+                                <el-table-column prop="publishDate" label="发布日期" width="100"></el-table-column>
+                                <el-table-column width="60">
+                                    <template slot-scope="scope">
+                                        <el-button type="text" size="mini" @click="viewNewsDetail(scope.row)">详情
+                                        </el-button>
+                                    </template>
+                                </el-table-column>
+                            </el-table>
+                        </el-tab-pane>
+                        <el-tab-pane label="统计信息" name="statistics">
+                            <div class="statistics-wrapper" v-loading="statisticsLoading">
+                                <el-row :gutter="24" v-if="statisticsData">
+                                    <el-col :span="24">
+                                        <el-card shadow="hover">
+                                            <el-row :gutter="20" class="full-height-row">
+                                                <el-col :span="8">
+                                                    <div class="total-clicks">
+                                                        <div class="total-clicks-value">
+                                                            {{ statisticsData.totalClicks }}
                                                         </div>
-                                                    </el-col>
-                                                    <el-col :span="8">
-                                                        <div class="total-clicks">
-                                                            <div class="total-clicks-value">{{
-                                                                    statisticsData.totalNews
-                                                                }}
-                                                            </div>
-                                                            <div class="total-clicks-label">总新闻数</div>
+                                                        <div class="total-clicks-label">总点击量</div>
+                                                    </div>
+                                                </el-col>
+                                                <el-col :span="8">
+                                                    <div class="total-clicks">
+                                                        <div class="total-clicks-value">{{
+                                                                statisticsData.totalNews
+                                                            }}
                                                         </div>
-                                                    </el-col>
-                                                    <el-col :span="8">
-                                                        <div class="total-clicks">
-                                                            <div class="total-clicks-value">{{
-                                                                    statisticsData.totalPages
-                                                                }}
-                                                            </div>
-                                                            <div class="total-clicks-label">总页数</div>
+                                                        <div class="total-clicks-label">总新闻数</div>
+                                                    </div>
+                                                </el-col>
+                                                <el-col :span="8">
+                                                    <div class="total-clicks">
+                                                        <div class="total-clicks-value">{{
+                                                                statisticsData.totalPages
+                                                            }}
                                                         </div>
-                                                    </el-col>
-                                                </el-row>
-                                            </el-card>
-                                        </el-col>
-                                    </el-row>
+                                                        <div class="total-clicks-label">总页数</div>
+                                                    </div>
+                                                </el-col>
+                                            </el-row>
+                                        </el-card>
+                                    </el-col>
+                                </el-row>
 
-                                </div>
-                            </el-tab-pane>
-                        </el-tabs>
-                    </div>
+                            </div>
+                        </el-tab-pane>
+                    </el-tabs>
                 </div>
             </div>
         </el-col>
