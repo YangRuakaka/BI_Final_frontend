@@ -127,12 +127,18 @@ export default {
             this.loading = true; // 确保设置加载状态
 
             try {
+                console.log('Fetching news with params:', this.newsApiParams);
                 const response = await dataService.queryNewsData(this.newsApiParams);
 
                 if (response.data.code === 200) {
-                    this.newsList = response.data.data.items;
+                    // 统一ID字段名称
+                    this.newsList = response.data.data.items.map(item => ({
+                        ...item,
+                        id: item.newsId || item.id
+                    }));
                     this.total = response.data.data.total;
-                    this.currentPage = response.data.data.page;
+                    // 不要从响应中覆盖当前页码，保持用户选择的页码
+                    // this.currentPage = response.data.data.page;
                     this.pageSize = response.data.data.pageSize;
                 } else {
                     console.error('获取新闻列表失败:', response.data.message);
@@ -329,10 +335,14 @@ export default {
             } else {
                 if (this.selectedNews.length < 2) {
                     this.selectedNews.push(completeRow);
+                    // 确保获取该新闻的热度历史数据
+                    this.fetchNewsPopularity(completeRow.id);
                 } else {
                     // 如果已选择两条新闻，替换最早选择的一条
                     this.selectedNews.shift();
                     this.selectedNews.push(completeRow);
+                    // 确保获取该新闻的热度历史数据
+                    this.fetchNewsPopularity(completeRow.id);
                 }
             }
 
@@ -502,6 +512,9 @@ export default {
             if (news.category && !newsDetail.category) {
                 newsDetail.category = news.category;
             }
+            
+            // 确保ID字段统一
+            newsDetail.id = news.newsId;
 
             // 检查是否已经在选中列表中
             const index = this.selectedNews.findIndex(item => item.id === news.newsId);

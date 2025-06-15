@@ -21,11 +21,11 @@ export default {
         addQueryLog(logData) {
             // 添加新的日志记录到列表
             this.queryLogs.unshift({
-                source: logData.source,
-                action: logData.action,
+                source: logData.source || '',
+                action: logData.action || '',
                 timestamp: new Date(logData.timestamp).toLocaleString(),
-                responseTime: logData.responseTime,
-                resultCount: logData.resultCount
+                responseTime: logData.responseTime || 0,
+                resultCount: logData.resultCount !== undefined ? logData.resultCount : '-'
             });
 
             // 保持日志数量在合理范围

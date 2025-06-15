@@ -124,7 +124,7 @@
 }
 
 .chat-container {
-  height: 325px;
+  height: 100%;
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -206,7 +206,8 @@
 .analysis-content {
   display: flex;
   flex-direction: column;
-  height: 320px;
+  height: 100%;
+  padding: 10px;
 }
 
 .compact-form {

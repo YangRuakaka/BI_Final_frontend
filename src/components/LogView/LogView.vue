@@ -16,11 +16,11 @@
 }
 
 .viewbody {
-  padding: 10px;
+  flex: 1;
   overflow: hidden;
-  flex-grow: 1;
   display: flex;
   flex-direction: column;
+  height: calc(100% - 40px); /* 减去header高度 */
 }
 
 .el-table {

@@ -8,6 +8,11 @@ module.exports = {
                 pathRewrite: {
                     '^/api': ''  // 移除 /api 前缀
                 }
+            },
+            '/agent': {  // 代理智能助手 API
+                target: 'http://127.0.0.1:8000',
+                changeOrigin: true,
+                ws: false
             }
         }
     }

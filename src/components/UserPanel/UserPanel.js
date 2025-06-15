@@ -77,6 +77,7 @@ export default {
             preferenceChart: null,
             isLargeChartVisible: false,
             largeChart: null,
+            lastRecommendationTime: null,  // 用于跟踪上次更新推荐的时间
             preferencesLoading: false
         }
     },
@@ -99,7 +100,14 @@ export default {
         systemTime(newTime) {
             if (this.selectedUser && newTime) {
                 this.updateUserProfile();
-                this.fetchRecommendedNews();
+                // 只在分钟变化时更新推荐新闻
+                if (!this.lastRecommendationTime || 
+                    newTime.getMinutes() !== this.lastRecommendationTime.getMinutes() ||
+                    newTime.getHours() !== this.lastRecommendationTime.getHours() ||
+                    newTime.getDate() !== this.lastRecommendationTime.getDate()) {
+                    this.lastRecommendationTime = new Date(newTime);
+                    this.fetchRecommendedNews();
+                }
             }
         }
     },
@@ -244,8 +252,16 @@ export default {
             }
 
             try {
+                // 首先对数据按日期排序（升序）
+                const sortedData = [...this.interestTrendData].sort((a, b) => {
+                    // 将日期字符串转换为数字进行比较
+                    const dateA = parseInt(String(a.date));
+                    const dateB = parseInt(String(b.date));
+                    return dateA - dateB;
+                });
+
                 // 获取所有日期和分类
-                const dates = this.interestTrendData.map(item => {
+                const dates = sortedData.map(item => {
                     // 确保date是字符串
                     const dateStr = String(item.date);
                     // 将YYYYMMDD格式转换为YYYY-MM-DD
@@ -256,7 +272,7 @@ export default {
 
                 // 获取所有不同的分类
                 const allCategories = new Set();
-                this.interestTrendData.forEach(item => {
+                sortedData.forEach(item => {
                     if (item.interests && Array.isArray(item.interests)) {
                         item.interests.forEach(interest => {
                             if (interest && interest.category) {
@@ -275,7 +291,7 @@ export default {
 
                     // 为每个日期找到对应分类的得分
                     dates.forEach((date, dateIndex) => {
-                        const dateItem = this.interestTrendData[dateIndex];
+                        const dateItem = sortedData[dateIndex];
                         let score = 0;
 
                         if (dateItem && dateItem.interests && Array.isArray(dateItem.interests)) {

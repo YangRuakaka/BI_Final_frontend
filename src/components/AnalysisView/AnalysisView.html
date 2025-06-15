@@ -139,7 +139,7 @@
                         <el-tabs v-model="activeTab" @tab-click="handleTabClick" size="small">
                             <el-tab-pane label="表格数据" name="table">
                                 <el-table :data="tableData" height="100%" border style="width: 100%">
-                                    <el-table-column prop="id" label="ID" width="80"></el-table-column>
+                                    <el-table-column prop="newsId" label="ID" width="80"></el-table-column>
                                     <el-table-column prop="headline" label="标题" show-overflow-tooltip></el-table-column>
                                     <el-table-column prop="topic" label="主题" width="100"></el-table-column>
                                     <el-table-column prop="category" label="分类" width="100"></el-table-column>

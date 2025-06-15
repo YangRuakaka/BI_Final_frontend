@@ -10,20 +10,20 @@
         </div>
       </el-header>
       <el-main id="systemMain">
-        <el-row :gutter="4">
-          <el-col :span="8" style="padding:2px;">
-            <LogView />
+        <el-row :gutter="4" style="height: 50%; margin-bottom: 4px;">
+          <el-col :span="8" style="padding:2px; height: 100%;">
+            <LogView style="height: 100%;" />
           </el-col>
-          <el-col :span="16" style="padding:2px;">
-            <AnalysisView />
+          <el-col :span="16" style="padding:2px; height: 100%;">
+            <AnalysisView style="height: 100%;" />
           </el-col>
         </el-row>
-        <el-row :gutter="4">
-          <el-col :span="12" style="padding:2px;">
-            <NewsPanel />
+        <el-row :gutter="4" style="height: 50%;">
+          <el-col :span="12" style="padding:2px; height: 100%;">
+            <NewsPanel style="height: 100%;" />
           </el-col>
-          <el-col :span="12" style="padding:2px;">
-            <UserPanel />
+          <el-col :span="12" style="padding:2px; height: 100%;">
+            <UserPanel style="height: 100%;" />
           </el-col>
         </el-row>
       </el-main>
@@ -65,6 +65,18 @@ export default {
 </script>
 
 <style>
+/* 全局重置样式 */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+}
+
 #app {
   font-family: "Avenir", Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -72,7 +84,18 @@ export default {
   text-align: center;
   color: #2c3e50;
   width: 100%;
+  height: 100%;
   margin: 0 auto;
+}
+
+.el-container {
+  height: 100%;
+}
+
+.viewcontainer {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 #systemHeader {
@@ -89,7 +112,8 @@ export default {
   /* background-color: #E9EEF3; */
   color: #333;
   text-align: center;
-  height: 700px;
+  height: calc(100vh - 60px); /* 动态计算高度 */
+  overflow: hidden; /* 防止整体滚动 */
 }
 
 .viewheader {
@@ -100,7 +124,9 @@ export default {
 }
 
 .viewbody {
-  height: 325px;
+  flex: 1;
+  display: flex;
+  overflow: hidden;
 }
 
 /* 在App.vue的style部分添加 */

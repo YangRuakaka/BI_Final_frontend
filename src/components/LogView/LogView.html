@@ -8,32 +8,18 @@
         <div class="viewbody">
             <el-table
                     :data="queryLogs"
-                    style="width: 100%"
-                    height="400">
-                <el-table-column
-                        prop="source"
-                        label="查询来源"
-                        width="120">
-                </el-table-column>
+                    style="width: 100%; height: 100%"
+                    height="100%">
                 <el-table-column
                         prop="action"
                         label="查询操作"
-                        width="180">
-                </el-table-column>
-                <el-table-column
-                        prop="timestamp"
-                        label="查询时间"
-                        width="180">
+                        show-overflow-tooltip>
                 </el-table-column>
                 <el-table-column
                         prop="responseTime"
                         label="响应时间(ms)"
-                        width="120">
-                </el-table-column>
-                <el-table-column
-                        prop="resultCount"
-                        label="结果数量"
-                        width="120">
+                        width="120"
+                        align="right">
                 </el-table-column>
             </el-table>
         </div>

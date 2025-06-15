@@ -16,7 +16,7 @@ export default {
     },
     computed: {
         formattedTime() {
-            if (!this.currentTime) return '--:--';
+            if (!this.currentTime) return '加载中...';
             const hours = this.currentTime.getHours().toString().padStart(2, '0');
             const minutes = this.currentTime.getMinutes().toString().padStart(2, '0');
             return `${hours}:${minutes}`;
@@ -32,9 +32,11 @@ export default {
             return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
         }
     },
-    created() {
+    mounted() {
         this.initializeTime();
         this.startTimer();
+        // 立即发送初始时间
+        this.$root.$emit('clock-time-updated', this.currentTime);
     },
     beforeDestroy() {
         this.stopTimer();
@@ -77,8 +79,6 @@ export default {
         updateSpeedRatio(newRatio) {
             // 改变速率时，需要重新计算起始时间点，以保持连续性
             const currentRealTime = Date.now();
-            const elapsedRealSeconds = Math.floor((currentRealTime - this.startRealTime) / 1000);
-            const elapsedSimulatedMinutes = elapsedRealSeconds * this.speedRatio;
 
             // 更新基准时间点和起始真实时间
             this.baseTime = new Date(this.currentTime.getTime());

@@ -4,9 +4,9 @@ import App from './App.vue'
 import ElementUI from 'element-ui';
 import 'element-ui/lib/theme-chalk/index.css';
 Vue.use(ElementUI);
-// Bootstrap
-import 'bootstrap'
-import 'bootstrap/dist/css/bootstrap.min.css'
+// Bootstrap - 暂时注释掉以避免CSS冲突
+// import 'bootstrap'
+// import 'bootstrap/dist/css/bootstrap.min.css'
 
 import _ from 'lodash'
 window._ = _

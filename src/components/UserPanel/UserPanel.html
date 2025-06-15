@@ -15,10 +15,21 @@
             当前选中: <el-tag size="mini" type="success">{{ selectedUser.id }}</el-tag>
         </span>
                     </div>
+                    <!-- 添加搜索框 -->
+                    <el-input
+                        v-model="searchText"
+                        placeholder="搜索用户ID..."
+                        prefix-icon="el-icon-search"
+                        clearable
+                        size="mini"
+                        @keyup.enter="handleSearchEnter"
+                        @clear="handleClearUserSearch"
+                        style="margin-bottom: 10px;">
+                    </el-input>
                     <el-table
                             :data="userList"
-                            style="width: 100%"
-                            height="300"
+                            style="width: 100%; flex: 1;"
+                            :height="null"
                             @row-click="handleRowClick"
                             highlight-current-row
                             v-loading="userLoading">
@@ -32,12 +43,13 @@
                     <!-- 添加分页控件 -->
                     <el-pagination
                             @current-change="handleUserPageChange"
-                            :current-page.sync="userCurrentPage"
+                            :current-page="userCurrentPage"
                             :page-size="userPageSize"
                             :total="userTotal"
-                            layout="prev, pager, next"
+                            layout="total, prev, pager, next, jumper"
                             size="mini"
                             :pager-count="5"
+                            :hide-on-single-page="false"
                             style="text-align: center; margin-top: 10px;">
                     </el-pagination>
                 </el-col>

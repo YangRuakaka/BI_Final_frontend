@@ -15,6 +15,9 @@ export default {
     },
     data() {
         return {
+            // 系统时间
+            systemTime: null,
+            
             // 聊天相关数据
             userInput: '',
             messages: [
@@ -26,7 +29,7 @@ export default {
 
             // 查询相关数据
             queryForm: {
-                dateRange: [this.getLastMonthDate(), this.formatDate(new Date())],
+                dateRange: ['2019-06-13', '2019-06-15'],
                 topics: [],
                 categories: [],
                 titleLengthRange: [10, 50],
@@ -76,6 +79,11 @@ export default {
     mounted() {
         this.fetchCategoryOptions();
         this.fetchTopicOptions();
+        
+        // 监听系统时间更新
+        this.$root.$on('clock-time-updated', (time) => {
+            this.systemTime = time;
+        });
     },
     beforeDestroy() {
         if (this.chart) {
@@ -211,10 +219,10 @@ export default {
             }
 
             // 调用统计分析 API
-            dataService.getNewsAnalytics(params)
+            return dataService.getNewsAnalytics(params)
                 .then(response => {
-                    if (response.code === 200) {
-                        this.analyticsData = response.data;
+                    if (response.data && response.data.code === 200) {
+                        this.analyticsData = response.data.data;
 
                         // 更新统计图表
                         if (this.activeTab === 'chart') {
@@ -266,10 +274,10 @@ export default {
                 params.categories = this.queryForm.categories.join(',');
             }
 
-            dataService.getStatistics(params)
+            return dataService.getStatistics(params)
                 .then(response => {
-                    if (response.code === 200) {
-                        this.statisticsData = response.data;
+                    if (response.data && response.data.code === 200) {
+                        this.statisticsData = response.data.data;
 
                         const endTime = performance.now();
                         // 发送查询日志
@@ -328,9 +336,9 @@ export default {
                 this.executeAnalyticsQuery()
             ])
                 .then(([newsResponse]) => {
-                    if (newsResponse.code === 200) {
-                        this.tableData = newsResponse.data.items;
-                        this.total = newsResponse.data.total;
+                    if (newsResponse.data && newsResponse.data.code === 200) {
+                        this.tableData = newsResponse.data.data.items || [];
+                        this.total = newsResponse.data.data.total || 0;
 
                         // 根据当前标签页更新图表
                         if (this.activeTab === 'chart') {
@@ -365,7 +373,7 @@ export default {
         resetQuery() {
             this.$refs.queryForm.resetFields();
             this.queryForm = {
-                dateRange: [this.getLastMonthDate(), this.formatDate(new Date())],
+                dateRange: ['2019-06-13', '2019-06-15'],
                 topics: [],
                 categories: [],
                 titleLengthRange: [10, 50],
@@ -646,6 +654,17 @@ export default {
             const day = String(date.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
         },
+        
+        formatDateTime(date) {
+            if (!date) return '';
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            const seconds = date.getSeconds().toString().padStart(2, '0');
+            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        },
 
         viewNewsDetail(row) {
             // 可以通过对话框或导航到详情页面展示新闻详情
@@ -664,8 +683,8 @@ export default {
         fetchCategoryOptions() {
             dataService.getCategories()
                 .then(response => {
-                    if (response.code === 200) {
-                        this.categoryOptions = response.data;
+                    if (response.data && response.data.code === 200) {
+                        this.categoryOptions = response.data.data || [];
                     }
                 })
                 .catch(error => {
@@ -676,8 +695,8 @@ export default {
         fetchTopicOptions() {
             dataService.getTopics()
                 .then(response => {
-                    if (response.code === 200) {
-                        this.topicOptions = response.data;
+                    if (response.data && response.data.code === 200) {
+                        this.topicOptions = response.data.data || [];
                     }
                 })
                 .catch(error => {

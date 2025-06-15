@@ -5,9 +5,15 @@
 #userpanel {
   border: 1px solid lightgray;
   border-radius: 5px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .viewbody {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
   padding: 10px;
 }
 
@@ -35,19 +41,17 @@
 .recommendation-container {
   display: flex;
   flex-direction: column;
-  height: 330px;
+  height: 100%;
 }
 
 .preference-chart {
   width: 100%;
-  height: 180px;  /* 从200px减少到180px */
-  margin-bottom: -30px;  /* 从-20px调整到-30px，使饼图更往上 */
-  margin-top: -10px;  /* 添加负的上边距，进一步向上移动 */
+  height: 200px;
 }
 
 .news-list {
+  flex: 1;
   overflow-y: auto;
-  height: 350px;
 }
 
 .news-item {
@@ -195,9 +199,15 @@
   margin-left: 5px;
 }
 
+.interest-trend-chart-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+}
+
 .interest-trend-chart {
   width: 100%;
-  height: 130px;
-  margin-top: 10px;
+  height: 150px;
 }
 </style>

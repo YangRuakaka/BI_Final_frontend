@@ -5,6 +5,9 @@
 #newspanel {
   border: 1px solid lightgray;
   border-radius: 5px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .filter-row {
@@ -12,8 +15,17 @@
   padding: 5px 0;
 }
 
+.viewbody {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  padding: 10px;
+}
+
 .news-table-container {
   height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .news-chart-container {
@@ -50,8 +62,9 @@
 }
 
 .trend-chart {
-  height: 250px;
+  flex: 1;
   width: 100%;
+  min-height: 200px;
 }
 
 .no-data-tip {
