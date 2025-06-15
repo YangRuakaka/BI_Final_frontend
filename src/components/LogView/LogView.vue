@@ -8,25 +8,37 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .viewheader {
   font-weight: bold;
   font-size: 16px;
+  padding: 6px 8px;
+  border-bottom: 1px solid #f0f0f0;
+  height: auto;
+  min-height: 24px;
+  line-height: 24px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
 }
 
 .viewbody {
   flex: 1;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  height: calc(100% - 40px); /* 减去header高度 */
+  position: relative;
 }
 
 .el-table {
-  flex-grow: 1;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
+/* 其他样式保持不变 */
 /* 调整表头文字大小和样式 */
 .el-table th {
   font-size: 12px !important;

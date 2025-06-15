@@ -1,27 +1,37 @@
 <div id="logview" class="viewcontainer">
-    <el-row>
-        <el-col :span="24">
-            <div class="viewheader">查询日志</div>
-        </el-col>
-    </el-row>
-    <el-row>
-        <div class="viewbody">
-            <el-table
-                    :data="queryLogs"
-                    style="width: 100%; height: 100%"
-                    height="100%">
-                <el-table-column
-                        prop="action"
-                        label="查询操作"
-                        show-overflow-tooltip>
-                </el-table-column>
-                <el-table-column
-                        prop="responseTime"
-                        label="响应时间(ms)"
-                        width="120"
-                        align="right">
-                </el-table-column>
-            </el-table>
-        </div>
-    </el-row>
+    <div class="viewheader">查询日志</div>
+    <div class="viewbody">
+        <el-table
+                :data="queryLogs"
+                style="width: 100%"
+                height="100%">
+            <el-table-column
+                    prop="action"
+                    label="查询操作"
+                    show-overflow-tooltip>
+            </el-table-column>
+            <el-table-column
+                    prop="responseTime"
+                    label="响应时间(ms)"
+                    width="120"
+                    align="right">
+            </el-table-column>
+            <el-table-column
+                    prop="resultCount"
+                    label="结果数量"
+                    width="100"
+                    align="right">
+            </el-table-column>
+            <el-table-column
+                    prop="source"
+                    label="来源"
+                    width="100">
+            </el-table-column>
+            <el-table-column
+                    prop="timestamp"
+                    label="时间"
+                    width="160">
+            </el-table-column>
+        </el-table>
+    </div>
 </div>

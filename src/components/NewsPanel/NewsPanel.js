@@ -41,14 +41,14 @@ export default {
         // 构建API请求参数
         newsApiParams() {
             const params = {
-                page: this.currentPage,
+                page: this.currentPage,  // 确保使用当前页码
                 pageSize: this.pageSize,
                 sortOrder: 'desc'
             };
 
             if (this.filterCategory) params.category = this.filterCategory;
             if (this.filterTopic) params.topic = this.filterTopic;
-            if (this.searchKeyword) params.searchText = this.searchKeyword; // 使用 searchKeyword 而不是 searchText
+            if (this.searchKeyword) params.searchText = this.searchKeyword;
 
             return params;
         },
@@ -82,11 +82,16 @@ export default {
                 this.updateChart();
             }
         },
-        // 监听过滤条件变化，重新加载数据
         newsApiParams: {
             deep: true,
-            handler() {
-                this.currentPage = 1; // 重置到第一页
+            handler(newVal, oldVal) {
+                // 只有在非页码变化时才重置页码
+                if (newVal.page === oldVal.page ||
+                    newVal.category !== oldVal.category ||
+                    newVal.topic !== oldVal.topic ||
+                    newVal.searchText !== oldVal.searchText) {
+                    this.currentPage = 1; // 重置到第一页
+                }
                 this.fetchNewsList();
             }
         }
@@ -286,8 +291,9 @@ export default {
 
         // 处理分页变化
         handlePageChange(page) {
+            console.log('切换到页码:', page);
             this.currentPage = page;
-            this.fetchNewsList();
+            this.fetchNewsList();  // 直接调用 fetchNewsList 来获取数据
         },
 
         getCategoryColor(category) {

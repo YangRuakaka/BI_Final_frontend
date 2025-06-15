@@ -17,59 +17,23 @@ export default {
             const minutes = this.systemTime.getMinutes().toString().padStart(2, '0');
 
             return `${year}-${month}-${day} ${hours}:${minutes}`;
-        },
-        currentPreferenceData() {
-            if (!this.selectedUser || !this.userPreferences[this.selectedUser.id] ||
-                !this.userPreferences[this.selectedUser.id][this.currentTimeIndex]) {
-                return [];
-            }
-
-            const currentPrefs = this.userPreferences[this.selectedUser.id][this.currentTimeIndex];
-            const total = Object.values(currentPrefs).reduce((sum, value) => sum + value, 0);
-
-            return Object.entries(currentPrefs).map(([name, value]) => {
-                return {
-                    name,
-                    value,
-                    percentage: ((value / total) * 100).toFixed(1),
-                    color: this.getCategoryColor(name)
-                };
-            }).sort((a, b) => b.value - a.value); // 按值从大到小排序
         }
     },
     data() {
         return {
+            systemTime: null,
             interestTrendData: {},
             interestTrendLoading: false,
             interestTrendChart: null,
             startDate: '2019-06-13',
             endDate: '2019-07-03',
-            systemTime: null,
             userList: [],
             selectedUser: null,
             searchText: '',
-            currentTimeIndex: 0,  // 当前时间点索引
-            isPlaying: false,     // 是否自动播放
-            playSpeed: 1000,      // 播放速度(毫秒)
-            playInterval: null,   // 播放计时器
             userCurrentPage: 1,   // 用户列表当前页码
             userPageSize: 20,     // 用户列表每页条数
             userTotal: 0,         // 用户总数
-            userLoading: false,   // 用户列表加载状态
-            // 模拟时间点数据
-            timePoints: [
-                "2019-07-10 08:00",
-                "2019-07-10 10:00",
-                "2019-07-10 12:00",
-                "2019-07-10 14:00",
-                "2019-07-10 16:00",
-                "2019-07-10 18:00",
-                "2019-07-10 20:00",
-                "2019-07-11 08:00",
-                "2019-07-11 10:00",
-                "2019-07-11 12:00"
-            ],
-
+            userLoading: false,   // 用户列表加载状
             userBrowseHistory: {},
             userPreferences: {},
             currentRecommendedNews: [],
@@ -99,17 +63,22 @@ export default {
         },
         systemTime(newTime) {
             if (this.selectedUser && newTime) {
+                // 总是更新用户资料（这不涉及推荐新闻API调用）
                 this.updateUserProfile();
-                // 只在分钟变化时更新推荐新闻
-                if (!this.lastRecommendationTime || 
-                    newTime.getMinutes() !== this.lastRecommendationTime.getMinutes() ||
-                    newTime.getHours() !== this.lastRecommendationTime.getHours() ||
-                    newTime.getDate() !== this.lastRecommendationTime.getDate()) {
+
+                console.log('lastRecommendationTime:', this.lastRecommendationTime);
+
+                // 检查是否需要刷新推荐新闻（一分钟刷新一次）
+                const shouldRefreshNews = !this.lastRecommendationTime ||
+                    (Math.floor((newTime - this.lastRecommendationTime) / 3600000) >= 1);
+
+                if (shouldRefreshNews) {
+                    console.log('一分钟时间到，刷新推荐新闻');
                     this.lastRecommendationTime = new Date(newTime);
                     this.fetchRecommendedNews();
                 }
             }
-        }
+        },
     },
     mounted: function () {
         // 初始加载用户列表
@@ -154,6 +123,7 @@ export default {
                 this.preferenceChart.on('click', this.showLargeChart);
             }
         });
+        // 订阅时钟更新事件
         this.$root.$on('clock-time-updated', (time) => {
             this.systemTime = time;
         });
@@ -583,7 +553,7 @@ export default {
 
             // 重置相关状态
             this.userPreferences = {}; // 清空之前的偏好数据
-            this.currentTimeIndex = 0;
+            this.lastRecommendationTime = null; // 重置上次推荐时间，确保选择新用户后立即获取推荐
 
             // 初始化折线图（在选择用户后）
             this.$nextTick(() => {
@@ -659,15 +629,14 @@ export default {
             }
         },
 
-        // 修改 processUserPreferences 方法，处理空数据情况
         processUserPreferences(userId, browseHistory) {
             // 如果userId对应的偏好数据不存在，初始化
             if (!this.userPreferences[userId]) {
                 this.userPreferences[userId] = {};
             }
 
-            // 初始化当前时间点的偏好数据
-            this.userPreferences[userId][this.currentTimeIndex] = {};
+            // 初始化当前用户的偏好数据（不再依赖时间点索引）
+            this.userPreferences[userId] = {};
 
             // 如果浏览历史为空，直接返回
             if (!browseHistory || browseHistory.length === 0) {
@@ -680,32 +649,8 @@ export default {
                 const score = item.score || 0;
 
                 // 直接使用分数作为兴趣值
-                this.userPreferences[userId][this.currentTimeIndex][category] = score;
+                this.userPreferences[userId][category] = score;
             });
-        },
-
-        // 新增：找到最接近的时间点索引
-        findClosestTimePointIndex(timestamp) {
-            // 将传入的时间戳转换为Date对象
-            const date = new Date(timestamp);
-            if (isNaN(date.getTime())) return -1;
-
-            // 将所有时间点转换为Date对象
-            const timePointDates = this.timePoints.map(tp => new Date(tp));
-
-            // 找出最近的时间点
-            let closestIndex = 0;
-            let minDiff = Math.abs(date - timePointDates[0]);
-
-            for (let i = 1; i < timePointDates.length; i++) {
-                const diff = Math.abs(date - timePointDates[i]);
-                if (diff < minDiff) {
-                    minDiff = diff;
-                    closestIndex = i;
-                }
-            }
-
-            return closestIndex;
         },
 
         // 修改 updateUserProfile 方法，优化数据检查逻辑
@@ -721,14 +666,13 @@ export default {
 
             // 检查是否有偏好数据
             if (!this.userPreferences[userId] ||
-                !this.userPreferences[userId][this.currentTimeIndex] ||
-                Object.keys(this.userPreferences[userId][this.currentTimeIndex]).length === 0) {
+                Object.keys(this.userPreferences[userId]).length === 0) {
                 this.showEmptyChart("暂无喜好数据");
                 return;
             }
 
-            // 使用当前时间点更新图表
-            this.updatePreferenceChart(userId, this.currentTimeIndex);
+            // 更新图表（不再传递时间点索引）
+            this.updatePreferenceChart(userId);
         },
 
 
@@ -806,7 +750,7 @@ export default {
 
             const userId = this.selectedUser.id;
             this.newsLoading = true;
-            const startTime = performance.now(); // 添加这一行来初始化 startTime
+            const startTime = performance.now();
 
             try {
                 // 使用系统时间的时间戳
@@ -845,27 +789,26 @@ export default {
         },
 
         // 修改更新饼图的方法
-        updatePreferenceChart(userId, timeIndex) {
+        updatePreferenceChart(userId) {
             if (!this.preferenceChart) return;
             const startTime = performance.now();
 
             const preferences = this.userPreferences[userId];
-            if (!preferences || !preferences[this.currentTimeIndex]) {
+            if (!preferences) {
                 this.showEmptyChart();
                 return;
             }
 
-            const currentPrefs = preferences[this.currentTimeIndex];
             // 检查是否有数据
-            if (Object.keys(currentPrefs).length === 0) {
+            if (Object.keys(preferences).length === 0) {
                 this.showEmptyChart();
                 return;
             }
 
             // 计算总分
-            const totalScore = Object.values(currentPrefs).reduce((sum, score) => sum + score, 0);
+            const totalScore = Object.values(preferences).reduce((sum, score) => sum + score, 0);
 
-            const seriesData = Object.entries(currentPrefs).map(([name, score]) => {
+            const seriesData = Object.entries(preferences).map(([name, score]) => {
                 const percentage = totalScore > 0 ? ((score / totalScore) * 100).toFixed(1) : 0;
                 return {
                     name,
@@ -925,10 +868,10 @@ export default {
             const endTime = performance.now();
             pipeService.emitQueryLog({
                 source: 'UserPanel',
-                action: `查询用户兴趣 (ID:${userId}, 时间点:${this.timePoints[this.currentTimeIndex]})`,
+                action: `查询用户兴趣 (ID:${userId}, 时间:${this.currentTimeString})`,
                 timestamp: Date.now(),
                 responseTime: Math.round(endTime - startTime),
-                resultCount: Object.keys(preferences[this.currentTimeIndex]).length
+                resultCount: Object.keys(preferences).length
             });
         },
 
@@ -967,8 +910,7 @@ export default {
 
             const userId = this.selectedUser.id;
             const preferences = this.userPreferences[userId];
-            if (!preferences || !preferences[this.currentTimeIndex] ||
-                Object.keys(preferences[this.currentTimeIndex]).length === 0) {
+            if (!preferences || Object.keys(preferences).length === 0) {
                 return; // 无数据不显示大图
             }
 
@@ -981,8 +923,8 @@ export default {
                 }
 
                 if (this.largeChart) {
-                    // 获取当前用户和时间点的偏好数据
-                    const currentPrefs = preferences[this.currentTimeIndex];
+                    // 获取当前用户的偏好数据
+                    const currentPrefs = preferences;
 
                     // 计算总分
                     const totalScore = Object.values(currentPrefs).reduce((sum, score) => sum + score, 0);
@@ -1055,8 +997,6 @@ export default {
 
                     this.largeChart.setOption(largeOption);
                     this.largeChart.resize();
-
-
                 }
 
                 // 初始化兴趣趋势图

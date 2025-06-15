@@ -11,28 +11,22 @@
                 <el-col :span="12" class="news-table-container">
                     <el-row :gutter="10" class="filter-row">
                         <el-col :span="6">
-                            <el-select v-model="filterCategory" placeholder="分类" clearable>
-                                <el-option
-                                        v-for="item in categoryOptions"
-                                        :key="item"
-                                        :label="item"
-                                        :value="item">
-                                    <div class="category-option">
-                                        <span class="color-block" :style="{backgroundColor: getCategoryColor(item)}"></span>
-                                        {{ item }}
-                                    </div>
-                                </el-option>
-                            </el-select>
+                            <el-input
+                                    v-model="filterCategory"
+                                    placeholder="分类"
+                                    clearable
+                                    @keyup.enter="handleCategoryEnter"
+                                    @clear="handleClearCategory">
+                            </el-input>
                         </el-col>
                         <el-col :span="6">
-                            <el-select v-model="filterTopic" placeholder="主题" clearable>
-                                <el-option
-                                        v-for="item in topicOptions"
-                                        :key="item"
-                                        :label="item"
-                                        :value="item">
-                                </el-option>
-                            </el-select>
+                            <el-input
+                                    v-model="filterTopic"
+                                    placeholder="主题"
+                                    clearable
+                                    @keyup.enter="handleTopicEnter"
+                                    @clear="handleClearTopic">
+                            </el-input>
                         </el-col>
                         <el-col :span="12">
                             <el-input

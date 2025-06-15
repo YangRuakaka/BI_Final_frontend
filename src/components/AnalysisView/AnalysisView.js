@@ -17,7 +17,7 @@ export default {
         return {
             // 系统时间
             systemTime: null,
-            
+            userIdInput: '',  // 添加用户ID输入框的值
             // 聊天相关数据
             userInput: '',
             messages: [
@@ -27,14 +27,13 @@ export default {
                 }
             ],
 
-            // 查询相关数据
             queryForm: {
-                dateRange: ['2019-06-13', '2019-06-15'],
-                topics: [],
-                categories: [],
+                dateRange: ['2019-06-13', '2019-07-03'],
+                topic: '',           // 单个主题（不是数组）
+                category: '',        // 单个分类（不是数组）
                 titleLengthRange: [10, 50],
                 contentLengthRange: [100, 1000],
-                users: []
+                users: []            // 用户ID列表保持不变，可以有多个
             },
 
             // 选项数据
@@ -77,9 +76,7 @@ export default {
         }
     },
     mounted() {
-        this.fetchCategoryOptions();
-        this.fetchTopicOptions();
-        
+
         // 监听系统时间更新
         this.$root.$on('clock-time-updated', (time) => {
             this.systemTime = time;
@@ -91,217 +88,52 @@ export default {
         }
     },
     methods: {
-        // 渲染分析图表
-        renderAnalyticsChart() {
-            if (!this.analyticsData || !this.chart) return;
-
-            // 准备图表数据
-            const { userTrends, topicDistribution, categoryComparison } = this.analyticsData;
-
-            // 设置图表选项 - 综合分析图表
-            const option = {
-                title: [
-                    {
-                        text: '用户行为趋势',
-                        left: '25%',
-                        top: '5%',
-                        textAlign: 'center'
-                    },
-                    {
-                        text: '主题分布',
-                        left: '75%',
-                        top: '5%',
-                        textAlign: 'center'
-                    },
-                    {
-                        text: '分类对比',
-                        left: 'center',
-                        top: '55%',
-                        textAlign: 'center'
-                    }
-                ],
-                grid: [
-                    {left: '5%', right: '55%', top: '15%', height: '35%'},
-                    {left: '55%', right: '5%', top: '15%', height: '35%'},
-                    {left: '5%', right: '5%', top: '65%', height: '30%'}
-                ],
-                tooltip: {
-                    trigger: 'axis'
-                },
-                xAxis: [
-                    {
-                        gridIndex: 0,
-                        type: 'category',
-                        data: userTrends.map(item => item.date),
-                        axisLabel: {
-                            formatter: value => value.substring(5) // 只显示月-日
-                        }
-                    },
-                    {
-                        gridIndex: 2,
-                        type: 'category',
-                        data: categoryComparison.map(item => item.name)
-                    }
-                ],
-                yAxis: [
-                    {gridIndex: 0, type: 'value', name: '互动数'},
-                    {gridIndex: 2, type: 'value', name: '新闻数'}
-                ],
-                series: [
-                    {
-                        name: '用户互动',
-                        type: 'line',
-                        xAxisIndex: 0,
-                        yAxisIndex: 0,
-                        data: userTrends.map(item => item.count),
-                        smooth: true,
-                        lineStyle: {width: 3},
-                        areaStyle: {opacity: 0.2}
-                    },
-                    {
-                        name: '主题分布',
-                        type: 'pie',
-                        radius: '70%',
-                        center: ['75%', '25%'],
-                        data: topicDistribution.map(item => ({
-                            name: item.name,
-                            value: item.count
-                        })),
-                        emphasis: {
-                            itemStyle: {
-                                shadowBlur: 10,
-                                shadowOffsetX: 0,
-                                shadowColor: 'rgba(0, 0, 0, 0.5)'
-                            }
-                        }
-                    },
-                    {
-                        name: '分类数量',
-                        type: 'bar',
-                        xAxisIndex: 1,
-                        yAxisIndex: 1,
-                        data: categoryComparison.map(item => item.count),
-                        itemStyle: {
-                            color: params => {
-                                const colors = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de'];
-                                return colors[params.dataIndex % colors.length];
-                            }
-                        }
-                    }
-                ]
-            };
-
-            this.chart.setOption(option);
+        handleUserIdEnter() {
+            console.log('用户ID输入:', this.userIdInput);
+            if (this.userIdInput && this.userIdInput.trim()) {
+                // 确保users数组已初始化
+                if (!this.queryForm.users) {
+                    this.queryForm.users = [];
+                }
+                // 添加新用户ID（避免重复）
+                const userId = this.userIdInput.trim();
+                if (!this.queryForm.users.includes(userId)) {
+                    this.queryForm.users.push(userId);
+                    console.log('添加用户筛选条件:', this.queryForm.users);
+                }
+                // 清空输入框 - 这一行很重要，之前缺少这个操作
+                this.userIdInput = '';
+            }
         },
 
-        // 执行组合查询，调用 getNewsAnalytics API
-        executeAnalyticsQuery() {
-            this.analyticsLoading = true;
-            const startTime = performance.now();
-
-            // 构建查询参数
-            const params = {
-                startDate: this.queryForm.dateRange[0],
-                endDate: this.queryForm.dateRange[1]
-            };
-
-            // 添加可选参数
-            if (this.queryForm.topics.length > 0) {
-                params.topics = this.queryForm.topics.join(',');
+        // 移除已选用户ID
+        removeSelectedUser(userId) {
+            const index = this.queryForm.users.indexOf(userId);
+            if (index !== -1) {
+                this.queryForm.users.splice(index, 1);
             }
-
-            if (this.queryForm.categories.length > 0) {
-                params.categories = this.queryForm.categories.join(',');
-            }
-
-            if (this.queryForm.users.length > 0) {
-                params.users = this.queryForm.users.join(',');
-            }
-
-            // 调用统计分析 API
-            return dataService.getNewsAnalytics(params)
-                .then(response => {
-                    if (response.data && response.data.code === 200) {
-                        this.analyticsData = response.data.data;
-
-                        // 更新统计图表
-                        if (this.activeTab === 'chart') {
-                            this.$nextTick(() => {
-                                this.renderAnalyticsChart();
-                            });
-                        }
-
-                        const endTime = performance.now();
-                        // 发送查询日志
-                        pipeService.emitQueryLog({
-                            source: 'AnalysisView',
-                            action: '新闻数据综合分析',
-                            timestamp: Date.now(),
-                            responseTime: Math.round(endTime - startTime),
-                            resultCount: Object.keys(this.analyticsData || {}).length,
-                            params: JSON.stringify(params)
-                        });
-                    } else {
-                        this.$message.error(response.message || '统计分析查询失败');
-                    }
-                })
-                .catch(error => {
-                    console.error('统计分析查询失败:', error);
-                    this.$message.error('统计分析查询失败，请稍后重试');
-                })
-                .finally(() => {
-                    this.analyticsLoading = false;
-                });
         },
 
-        // 获取统计数据
-        fetchStatistics() {
-            this.statisticsLoading = true;
-            const startTime = performance.now();
-
-            // 构建查询参数
-            const params = {
-                startDate: this.queryForm.dateRange[0],
-                endDate: this.queryForm.dateRange[1]
-            };
-
-            // 添加可选参数
-            if (this.queryForm.topics.length > 0) {
-                params.topics = this.queryForm.topics.join(',');
-            }
-
-            if (this.queryForm.categories.length > 0) {
-                params.categories = this.queryForm.categories.join(',');
-            }
-
-            return dataService.getStatistics(params)
-                .then(response => {
-                    if (response.data && response.data.code === 200) {
-                        this.statisticsData = response.data.data;
-
-                        const endTime = performance.now();
-                        // 发送查询日志
-                        pipeService.emitQueryLog({
-                            source: 'AnalysisView',
-                            action: '新闻统计数据查询',
-                            timestamp: Date.now(),
-                            responseTime: Math.round(endTime - startTime),
-                            resultCount: Object.keys(this.statisticsData || {}).length
-                        });
-                    } else {
-                        this.$message.error(response.message || '查询统计数据失败');
-                    }
-                })
-                .catch(error => {
-                    console.error('查询统计数据失败:', error);
-                    this.$message.error('查询统计数据失败，请稍后重试');
-                })
-                .finally(() => {
-                    this.statisticsLoading = false;
-                });
+        // 清除用户ID输入
+        handleClearUserIdInput() {
+            this.userIdInput = '';
         },
-        // 查询表单相关方法
+
+        // 处理清除分类输入
+        handleClearCategory() {
+            this.queryForm.categoryInput = '';
+            this.queryForm.category = ''; // 同时清除已保存的分类值
+            console.log('已清除分类筛选条件');
+        },
+
+        handleClearTopic() {
+            this.queryForm.topicInput = '';
+            this.queryForm.topic = ''; // 同时清除已保存的主题
+            console.log('已清除主题筛选条件');
+        },
+
         executeQuery() {
+            console.log("开始查询，当前页：", this.currentPage, "每页条数：", this.pageSize);
             this.queryLoading = true;
             const startTime = performance.now();
 
@@ -311,36 +143,82 @@ export default {
                 endDate: this.queryForm.dateRange[1],
                 page: this.currentPage,
                 pageSize: this.pageSize,
-                minTitleLength: this.queryForm.titleLengthRange[0],
-                maxTitleLength: this.queryForm.titleLengthRange[1],
-                minContentLength: this.queryForm.contentLengthRange[0],
-                maxContentLength: this.queryForm.contentLengthRange[1]
+                titleLengthMin: this.queryForm.titleLengthRange[0],
+                titleLengthMax: this.queryForm.titleLengthRange[1],
+                contentLengthMin: this.queryForm.contentLengthRange[0],
+                contentLengthMax: this.queryForm.contentLengthRange[1]
             };
 
-            if (this.queryForm.topics.length > 0) {
-                params.topics = this.queryForm.topics.join(',');
+            // 在发送请求前打印检查
+            console.log('分页参数:', { page: this.currentPage, pageSize: this.pageSize, total: this.total });
+            // 添加主题参数（如果有）
+            if (this.queryForm.topic) {
+                params.topic = this.queryForm.topic;
+                console.log('发送topic参数:', params.topic);
             }
 
-            if (this.queryForm.categories.length > 0) {
-                params.categories = this.queryForm.categories.join(',');
+            // 添加分类参数（如果有）
+            if (this.queryForm.category) {
+                params.category = this.queryForm.category;
+                console.log('发送category参数:', params.category);
             }
 
-            if (this.queryForm.users.length > 0) {
-                params.users = this.queryForm.users.join(',');
+            // 处理用户参数（这里保持多选功能）
+            if (this.queryForm.users && this.queryForm.users.length > 0) {
+                // 单个用户ID使用userId
+                if (this.queryForm.users.length === 1) {
+                    params.userId = this.queryForm.users[0];
+                } else {
+                    // 多个用户ID使用userIds
+                    params.userIds = this.queryForm.users.join(',');
+                }
             }
 
-            // 同时获取列表数据、统计数据和分析数据
-            Promise.all([
-                dataService.queryNewsData(params),
-                this.fetchStatistics(),
-                this.executeAnalyticsQuery()
-            ])
-                .then(([newsResponse]) => {
-                    if (newsResponse.data && newsResponse.data.code === 200) {
-                        this.tableData = newsResponse.data.data.items || [];
-                        this.total = newsResponse.data.data.total || 0;
+            console.log('完整的查询参数:', JSON.stringify(params));
 
-                        // 根据当前标签页更新图表
+            dataService.getStatistics(params)
+                .then(async (response) => {
+                    if (response.data && response.data.code === 200) {
+                        // 提取响应数据
+                        const responseData = response.data.data;
+
+                        // 更新分页相关数据
+                        this.total = responseData.totalNews || 0;
+                        this.currentPage = parseInt(responseData.page) || 1;
+                        this.pageSize = parseInt(responseData.pageSize) || 20;
+
+                        console.log('API返回的分页数据:', {
+                            total: this.total,
+                            currentPage: this.currentPage,
+                            pageSize: this.pageSize
+                        });
+                        // 获取统计API返回的新闻ID列表
+                        const newsIds = responseData.newsStats || [];
+
+                        // 更新统计数据
+                        this.statisticsData = {
+                            totalClicks: responseData.totalClicks || 0,
+                            totalNews: responseData.totalNews || 0,
+                            totalPages: responseData.totalPages || 0,
+                            newsStats: responseData.newsStats || []
+                        };
+
+                        // 如果有新闻ID，获取详细信息
+                        if (newsIds.length > 0) {
+                            try {
+                                // 批量获取新闻详情
+                                const newsDetailsData = await this.fetchNewsDetails(newsIds);
+                                this.tableData = newsDetailsData;
+                            } catch (error) {
+                                console.error('获取新闻详情失败:', error);
+                                this.$message.error('获取新闻详情失败，请稍后重试');
+                                this.tableData = [];
+                            }
+                        } else {
+                            this.tableData = [];
+                        }
+
+                        // 如果当前是图表标签页，初始化图表
                         if (this.activeTab === 'chart') {
                             this.$nextTick(() => {
                                 this.initChart();
@@ -351,14 +229,14 @@ export default {
                         // 发送查询日志
                         pipeService.emitQueryLog({
                             source: 'AnalysisView',
-                            action: `新闻数据高级查询`,
+                            action: '新闻数据查询',
                             timestamp: Date.now(),
                             responseTime: Math.round(endTime - startTime),
                             resultCount: this.total,
                             params: JSON.stringify(params)
                         });
                     } else {
-                        this.$message.error(newsResponse.message || '查询失败');
+                        this.$message.error(response.message || '查询失败');
                     }
                 })
                 .catch(error => {
@@ -370,16 +248,67 @@ export default {
                 });
         },
 
+// 添加新方法：批量获取新闻详情
+        async fetchNewsDetails(newsIds) {
+            // 如果输入不是数组或为空，直接返回空数组
+            if (!Array.isArray(newsIds) || newsIds.length === 0) {
+                return [];
+            }
+
+            console.log('开始获取新闻详情，总数:', newsIds.length);
+
+            // 使用Promise.all并行获取所有新闻详情
+            const newsDetailsPromises = newsIds.map(async (newsItem) => {
+                try {
+                    // 检查newsItem是否为对象并且具有id属性，或者直接就是id字符串
+                    const newsId = typeof newsItem === 'object' ? newsItem.newsId : newsItem;
+
+                    if (!newsId) {
+                        console.error('无效的新闻ID:', newsItem);
+                        return null;
+                    }
+
+                    const response = await dataService.getNewsDetail(newsId);
+
+                    if (response.data && response.data.code === 200) {
+                        return {
+                            newsId: newsId,
+                            headline: response.data.data.headline,
+                            topic: response.data.data.topic,
+                            category: response.data.data.category,
+                            publishDate: response.data.data.publishDate ? response.data.data.publishDate.substring(0, 10) : '',
+                            body: response.data.data.body
+                        };
+                    } else {
+                        console.error(`获取新闻详情失败，ID: ${newsId}`);
+                        return null;
+                    }
+                } catch (error) {
+                    console.error(`获取新闻详情出错，ID: ${typeof newsItem === 'object' ? newsItem.newsId : newsItem}`, error);
+                    return null;
+                }
+            });
+
+            // 等待所有请求完成
+            const results = await Promise.all(newsDetailsPromises);
+
+            // 过滤掉null值并返回结果
+            return results.filter(item => item !== null);
+        },
+
         resetQuery() {
             this.$refs.queryForm.resetFields();
             this.queryForm = {
                 dateRange: ['2019-06-13', '2019-06-15'],
-                topics: [],
-                categories: [],
+                topicInput: '',
+                topic: '',            // 重置为空字符串
+                categoryInput: '',
+                category: '',         // 重置为空字符串
                 titleLengthRange: [10, 50],
                 contentLengthRange: [100, 1000],
                 users: []
             };
+            console.log('已重置查询条件');
         },
 
         remoteSearchUsers(query) {
@@ -399,15 +328,17 @@ export default {
             }
         },
 
-        // 分页相关方法
         handleSizeChange(val) {
+            console.log('页大小改变:', val);
             this.pageSize = val;
-            this.executeQuery();
+            this.currentPage = 1; // 页大小改变时重置为第一页
+            this.executeQuery(); // 重新执行查询
         },
 
         handleCurrentChange(val) {
+            console.log('页码改变:', val);
             this.currentPage = val;
-            this.executeQuery();
+            this.executeQuery(); // 重新执行查询
         },
 
         // 图表相关方法
@@ -565,96 +496,6 @@ export default {
             }
         },
 
-        // 数据导出相关方法
-        handleExportCommand(command) {
-            if (!this.tableData.length) {
-                this.$message.warning('暂无数据可导出');
-                return;
-            }
-
-            this.exportLoading = true;
-
-            if (command === 'excel' || command === 'csv') {
-                dataService.exportNewsData({
-                    format: command,
-                    ...this.buildExportParams()
-                }).then(response => {
-                    this.downloadFile(response.data.url, `新闻数据_${this.formatDate(new Date())}.${command}`);
-                    this.$message.success('导出成功');
-                }).catch(() => {
-                    this.$message.error('导出失败');
-                }).finally(() => {
-                    this.exportLoading = false;
-                });
-            } else if (command === 'image') {
-                if (this.chart) {
-                    const dataURL = this.chart.getDataURL();
-                    this.downloadDataURL(dataURL, `新闻数据图表_${this.formatDate(new Date())}.png`);
-                    this.$message.success('导出成功');
-                } else {
-                    this.$message.warning('请先切换到图表视图');
-                }
-                this.exportLoading = false;
-            }
-        },
-
-        // 辅助方法
-        buildExportParams() {
-            const params = {
-                startDate: this.queryForm.dateRange[0],
-                endDate: this.queryForm.dateRange[1],
-                minTitleLength: this.queryForm.titleLengthRange[0],
-                maxTitleLength: this.queryForm.titleLengthRange[1],
-                minContentLength: this.queryForm.contentLengthRange[0],
-                maxContentLength: this.queryForm.contentLengthRange[1]
-            };
-
-            if (this.queryForm.topics.length > 0) {
-                params.topics = this.queryForm.topics.join(',');
-            }
-
-            if (this.queryForm.categories.length > 0) {
-                params.categories = this.queryForm.categories.join(',');
-            }
-
-            if (this.queryForm.users.length > 0) {
-                params.users = this.queryForm.users.join(',');
-            }
-
-            return params;
-        },
-
-        downloadFile(url, filename) {
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        },
-
-        downloadDataURL(dataURL, filename) {
-            const a = document.createElement('a');
-            a.href = dataURL;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        },
-
-        getLastMonthDate() {
-            const date = new Date();
-            date.setMonth(date.getMonth() - 1);
-            return this.formatDate(date);
-        },
-
-        formatDate(date) {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        },
-        
         formatDateTime(date) {
             if (!date) return '';
             const year = date.getFullYear();
@@ -677,31 +518,6 @@ export default {
             `, '新闻详情', {
                 dangerouslyUseHTMLString: true
             });
-        },
-
-        // 初始化选项数据的方法
-        fetchCategoryOptions() {
-            dataService.getCategories()
-                .then(response => {
-                    if (response.data && response.data.code === 200) {
-                        this.categoryOptions = response.data.data || [];
-                    }
-                })
-                .catch(error => {
-                    console.error('获取分类列表失败:', error);
-                });
-        },
-
-        fetchTopicOptions() {
-            dataService.getTopics()
-                .then(response => {
-                    if (response.data && response.data.code === 200) {
-                        this.topicOptions = response.data.data || [];
-                    }
-                })
-                .catch(error => {
-                    console.error('获取主题列表失败:', error);
-                });
         }
     }
 }

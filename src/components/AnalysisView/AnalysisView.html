@@ -25,39 +25,26 @@
                         </el-col>
                         <el-col :span="8">
                             <el-form-item label="新闻主题">
-                                <el-select
-                                        v-model="queryForm.topics"
-                                        multiple
-                                        filterable
-                                        collapse-tags
-                                        placeholder="选择主题"
-                                        size="mini"
-                                        style="width: 100%;">
-                                    <el-option
-                                            v-for="item in topicOptions"
-                                            :key="item.id"
-                                            :label="item.name"
-                                            :value="item.id">
-                                    </el-option>
-                                </el-select>
+                                <el-input
+                                        v-model="queryForm.topic"
+                                        placeholder="输入主题"
+                                        prefix-icon="el-icon-collection-tag"
+                                        clearable
+                                        @keyup.enter="handleTopicEnter"
+                                        @clear="handleClearTopic">
+                                </el-input>
                             </el-form-item>
                         </el-col>
                         <el-col :span="8">
                             <el-form-item label="分类">
-                                <el-select
-                                        v-model="queryForm.categories"
-                                        multiple
-                                        collapse-tags
-                                        placeholder="选择分类"
-                                        size="mini"
-                                        style="width: 100%;">
-                                    <el-option
-                                            v-for="item in categoryOptions"
-                                            :key="item.id"
-                                            :label="item.name"
-                                            :value="item.id">
-                                    </el-option>
-                                </el-select>
+                                <el-input
+                                        v-model="queryForm.category"
+                                        placeholder="输入分类"
+                                        prefix-icon="el-icon-menu"
+                                        clearable
+                                        @keyup.enter="handleCategoryEnter"
+                                        @clear="handleClearCategory">
+                                </el-input>
                             </el-form-item>
                         </el-col>
                     </el-row>
@@ -65,25 +52,34 @@
                     <el-row :gutter="10">
                         <el-col :span="8">
                             <el-form-item label="用户">
-                                <el-select
-                                        v-model="queryForm.users"
-                                        multiple
-                                        filterable
-                                        remote
-                                        collapse-tags
-                                        reserve-keyword
-                                        placeholder="搜索用户"
-                                        :remote-method="remoteSearchUsers"
-                                        :loading="userLoading"
-                                        size="mini"
-                                        style="width: 100%;">
-                                    <el-option
-                                            v-for="item in userOptions"
-                                            :key="item.id"
-                                            :label="item.name"
-                                            :value="item.id">
-                                    </el-option>
-                                </el-select>
+                                <div style="display: flex;">
+                                    <el-input
+                                            v-model="userIdInput"
+                                            placeholder="输入用户ID"
+                                            prefix-icon="el-icon-user"
+                                            clearable
+                                            @clear="handleClearUserIdInput"
+                                            size="mini"
+                                            style="flex: 1;">
+                                    </el-input>
+                                    <el-button
+                                            type="primary"
+                                            size="mini"
+                                            icon="el-icon-plus"
+                                            @click="handleUserIdEnter"
+                                            style="margin-left: 3px; padding: 5px 7px; font-size: 12px;">
+                                    </el-button>
+                                </div>
+                                <div class="selected-tags" v-if="queryForm.users && queryForm.users.length > 0">
+                                    <el-tag
+                                            v-for="userId in queryForm.users"
+                                            :key="userId"
+                                            size="mini"
+                                            closable
+                                            @close="removeSelectedUser(userId)">
+                                        {{ userId }}
+                                    </el-tag>
+                                </div>
                             </el-form-item>
                         </el-col>
                         <el-col :span="8">
@@ -111,18 +107,9 @@
                     </el-row>
 
                     <el-form-item class="action-buttons">
-                        <el-button type="primary" size="mini" @click="executeQuery" :loading="queryLoading">查询</el-button>
+                        <el-button type="primary" size="mini" @click="executeQuery" :loading="queryLoading">查询
+                        </el-button>
                         <el-button size="mini" @click="resetQuery">重置</el-button>
-                        <el-dropdown trigger="click" @command="handleExportCommand" size="mini">
-                            <el-button type="success" size="mini">
-                                导出<i class="el-icon-arrow-down el-icon--right"></i>
-                            </el-button>
-                            <el-dropdown-menu slot="dropdown">
-                                <el-dropdown-item command="excel">Excel</el-dropdown-item>
-                                <el-dropdown-item command="csv">CSV</el-dropdown-item>
-                                <el-dropdown-item command="image">图表图片</el-dropdown-item>
-                            </el-dropdown-menu>
-                        </el-dropdown>
                     </el-form-item>
                 </el-form>
 
@@ -138,19 +125,8 @@
                     <div v-else class="result-content">
                         <el-tabs v-model="activeTab" @tab-click="handleTabClick" size="small">
                             <el-tab-pane label="表格数据" name="table">
-                                <el-table :data="tableData" height="100%" border style="width: 100%">
-                                    <el-table-column prop="newsId" label="ID" width="80"></el-table-column>
-                                    <el-table-column prop="headline" label="标题" show-overflow-tooltip></el-table-column>
-                                    <el-table-column prop="topic" label="主题" width="100"></el-table-column>
-                                    <el-table-column prop="category" label="分类" width="100"></el-table-column>
-                                    <el-table-column prop="publishDate" label="发布日期" width="100"></el-table-column>
-                                    <el-table-column width="60">
-                                        <template slot-scope="scope">
-                                            <el-button type="text" size="mini" @click="viewNewsDetail(scope.row)">详情</el-button>
-                                        </template>
-                                    </el-table-column>
-                                </el-table>
-                                <div class="pagination-container">
+                                <!-- 修改后 -->
+                                <div class="pagination-container" style="margin-top: 10px; text-align: right; background-color: #fff; padding: 10px 0;">
                                     <el-pagination
                                             @size-change="handleSizeChange"
                                             @current-change="handleCurrentChange"
@@ -162,51 +138,62 @@
                                             :total="total">
                                     </el-pagination>
                                 </div>
-                            </el-tab-pane>
-                            <el-tab-pane label="统计图表" name="chart">
-                                <div class="chart-wrapper" ref="chartContainer"></div>
+                                <el-table :data="tableData" height="100%" border style="width: 100%">
+                                    <el-table-column prop="newsId" label="ID" width="80"></el-table-column>
+                                    <el-table-column prop="headline" label="标题"
+                                                     show-overflow-tooltip></el-table-column>
+                                    <el-table-column prop="topic" label="主题" width="100"></el-table-column>
+                                    <el-table-column prop="category" label="分类" width="100"></el-table-column>
+                                    <el-table-column prop="publishDate" label="发布日期" width="100"></el-table-column>
+                                    <el-table-column width="60">
+                                        <template slot-scope="scope">
+                                            <el-button type="text" size="mini" @click="viewNewsDetail(scope.row)">详情
+                                            </el-button>
+                                        </template>
+                                    </el-table-column>
+                                </el-table>
+
                             </el-tab-pane>
                             <el-tab-pane label="统计信息" name="statistics">
                                 <div class="statistics-wrapper" v-loading="statisticsLoading">
-                                    <el-row :gutter="20" v-if="statisticsData">
+                                    <el-row :gutter="24" v-if="statisticsData">
                                         <el-col :span="24">
-                                            <el-card shadow="hover" class="statistics-card">
+                                            <el-card shadow="hover" class="statistics-card full-height-card">
                                                 <div slot="header" class="clearfix">
                                                     <span>总体统计</span>
                                                 </div>
-                                                <div class="total-clicks">
-                                                    <div class="total-clicks-value">{{ statisticsData.totalClicks }}</div>
-                                                    <div class="total-clicks-label">总点击量</div>
-                                                </div>
+                                                <el-row :gutter="20" class="full-height-row">
+                                                    <el-col :span="8">
+                                                        <div class="total-clicks">
+                                                            <div class="total-clicks-value">
+                                                                {{ statisticsData.totalClicks }}
+                                                            </div>
+                                                            <div class="total-clicks-label">总点击量</div>
+                                                        </div>
+                                                    </el-col>
+                                                    <el-col :span="8">
+                                                        <div class="total-clicks">
+                                                            <div class="total-clicks-value">{{
+                                                                    statisticsData.totalNews
+                                                                }}
+                                                            </div>
+                                                            <div class="total-clicks-label">总新闻数</div>
+                                                        </div>
+                                                    </el-col>
+                                                    <el-col :span="8">
+                                                        <div class="total-clicks">
+                                                            <div class="total-clicks-value">{{
+                                                                    statisticsData.totalPages
+                                                                }}
+                                                            </div>
+                                                            <div class="total-clicks-label">总页数</div>
+                                                        </div>
+                                                    </el-col>
+                                                </el-row>
                                             </el-card>
                                         </el-col>
                                     </el-row>
 
-                                    <el-row :gutter="20" style="margin-top: 15px;">
-                                        <el-col :span="12">
-                                            <el-card shadow="hover" class="statistics-card">
-                                                <div slot="header" class="clearfix">
-                                                    <span>用户统计</span>
-                                                </div>
-                                                <el-table :data="statisticsData && statisticsData.userStats || []" height="250" size="mini">
-                                                    <el-table-column prop="userId" label="用户ID" width="120"></el-table-column>
-                                                    <el-table-column prop="clickCount" label="点击量" width="100"></el-table-column>
-                                                </el-table>
-                                            </el-card>
-                                        </el-col>
-
-                                        <el-col :span="12">
-                                            <el-card shadow="hover" class="statistics-card">
-                                                <div slot="header" class="clearfix">
-                                                    <span>新闻统计</span>
-                                                </div>
-                                                <el-table :data="statisticsData && statisticsData.userStats || []" height="250" size="mini">
-                                                    <el-table-column prop="newsId" label="新闻ID" width="120"></el-table-column>
-                                                    <el-table-column prop="clickCount" label="点击量" width="100"></el-table-column>
-                                                </el-table>
-                                            </el-card>
-                                        </el-col>
-                                    </el-row>
                                 </div>
                             </el-tab-pane>
                         </el-tabs>

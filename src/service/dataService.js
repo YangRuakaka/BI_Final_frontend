@@ -87,29 +87,6 @@ export default {
         }
     },
 
-    // 获取新闻分类列表
-    async getCategories() {
-        try {
-            const response = await apiClient.get('/categories');
-            return response;
-        } catch (error) {
-            console.error('获取分类列表失败:', error);
-            throw error;
-        }
-    },
-
-    // 获取新闻主题列表
-    async getTopics(category) {
-        try {
-            const params = category ? { category } : {};
-            const response = await apiClient.get('/topics', { params });
-            return response;
-        } catch (error) {
-            console.error('获取主题列表失败:', error);
-            throw error;
-        }
-    },
-
     // 搜索用户
     async searchUsers(query) {
         try {
@@ -128,17 +105,6 @@ export default {
             return response;
         } catch (error) {
             console.error('搜索用户失败:', error);
-            throw error;
-        }
-    },
-
-    // 获取统计分析数据
-    async getNewsAnalytics(params) {
-        try {
-            const response = await apiClient.get('/news/analytics', { params });
-            return response;
-        } catch (error) {
-            console.error('获取统计分析数据失败:', error);
             throw error;
         }
     },

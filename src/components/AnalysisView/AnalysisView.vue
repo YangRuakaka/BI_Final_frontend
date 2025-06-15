@@ -234,7 +234,6 @@
 
 .action-buttons {
   margin-bottom: 0 !important;
-  margin-left: -48px !important;
   display: flex;
   justify-content: flex-start;
 }
@@ -306,5 +305,44 @@
   font-size: 14px;
   color: #606266;
   margin-top: 5px;
+}
+
+.selected-tags {
+  margin-top: 5px;
+}
+
+.selected-tags .el-tag {
+  margin-right: 5px;
+  margin-bottom: 5px;
+}
+
+.full-height-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.full-height-card .el-card__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.full-height-row {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+}
+
+.total-clicks {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.el-col {
+  height: 100%;
 }
 </style>
